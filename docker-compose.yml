@@ -1,0 +1,27 @@
+services:
+  db:
+    container_name: db
+    image: mysql
+    env_file: .env
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - backend
+  server:
+    depends_on:
+      - db
+    container_name: server
+    env_file: .env
+    build:
+        context: .
+        no_cache: true
+    ports:
+      - "8080:8080"
+    restart: always
+
+
+volumes:
+    db: {}
+
+networks:
+  backend: {}
