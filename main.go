@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 )
 
@@ -38,8 +39,13 @@ func run(logger *zap.Logger) error {
 	if dbPort == "" {
 		dbPort = "3306"
 	}
+	forceMigrationStr := os.Getenv("FORCE_MIGRATION")
+	forceMigration, err := strconv.Atoi(forceMigrationStr)
+	if err != nil && forceMigrationStr != "" {
+		return err
+	}
 
-	dataSourceName := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true"
+	dataSourceName := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
 	db, err := database.NewDatabase(ctx, logger, dataSourceName)
 	if err != nil {
 		return err
@@ -47,6 +53,16 @@ func run(logger *zap.Logger) error {
 	defer func(db database.Database) {
 		_ = db.Close()
 	}(db)
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = db.MakeMigrations(forceMigration)
+	if err != nil {
+		return err
+	}
 
 	router := gin.Default()
 	router.Static("/static", "./static")
