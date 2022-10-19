@@ -5,7 +5,6 @@
 package query
 
 import (
-	"beneburg/pkg/database/model"
 	"context"
 
 	"gorm.io/gorm"
@@ -16,6 +15,8 @@ import (
 	"gorm.io/gen/field"
 
 	"gorm.io/plugin/dbresolver"
+
+	"beneburg/pkg/database/model"
 )
 
 func newToken(db *gorm.DB) token {

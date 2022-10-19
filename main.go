@@ -2,7 +2,6 @@ package main
 
 import (
 	"beneburg/pkg/database"
-	"beneburg/pkg/database/model"
 	"beneburg/pkg/site"
 	"beneburg/pkg/telegram"
 	"context"
@@ -56,16 +55,11 @@ func run(logger *zap.Logger) error {
 		return err
 	}
 
-	models := []interface{}{&model.User{}, &model.Token{}}
-
 	// Making migrations
-	err = db.AutoMigrate(models...)
+	err = db.AutoMigrate(database.Models...)
 	if err != nil {
 		return err
 	}
-
-	// Generating query schema
-	db.GenerateCode(models...)
 
 	if onlyMakeMigrations {
 		logger.Info("Migrations and code generation were made, exiting...")

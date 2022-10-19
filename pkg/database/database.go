@@ -17,15 +17,14 @@ type Database interface {
 
 	// CreateToken creates a new token for the given telegramID and returns token's uuid.
 	CreateToken(telegramID int64) (string, error)
-
-	// GenerateCode generates gorm code for the given models.
-	GenerateCode(models ...interface{})
 	GetAllUsers() ([]*model.User, error)
 	GetUserByID(id uint) (*model.User, error)
 	GetUserByTelegramID(telegramID int64) (*model.User, error)
 	UpdateUserByID(id uint, user *model.User) (*gen.ResultInfo, error)
 	UpdateUserByTelegramID(telegramID int64, user *model.User) (*gen.ResultInfo, error)
 }
+
+var Models = []interface{}{model.User{}, model.Token{}}
 
 type database struct {
 	db *gorm.DB
@@ -56,16 +55,6 @@ func (d database) CreateUser(user *model.User) error {
 	return nil
 }
 
-func (d database) GenerateCode(models ...interface{}) {
-	g := gen.NewGenerator(gen.Config{
-		OutPath:           "pkg/database/query",
-		FieldNullable:     true,
-		FieldWithIndexTag: true,
-		FieldWithTypeTag:  true,
-	})
-	g.ApplyBasic(models...)
-	g.Execute()
-}
 func (d database) GetAllUsers() ([]*model.User, error) {
 	u := query.Use(d.db).User
 	all, err := u.WithContext(d.ctx).Find()
