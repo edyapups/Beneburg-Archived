@@ -6,6 +6,7 @@ import (
 	"beneburg/pkg/telegram"
 	"context"
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
@@ -39,9 +40,9 @@ func run(logger *zap.Logger) error {
 	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
 	botToken := os.Getenv("BOT_TOKEN")
 
-	if len(botToken) == 0 {
-		return fmt.Errorf("BOT_TOKEN must be specified")
-	}
+	//if len(botToken) == 0 {
+	//	return fmt.Errorf("BOT_TOKEN must be specified")
+	//}
 	if dbHost == "" {
 		dbHost = "localhost"
 	}
@@ -67,15 +68,18 @@ func run(logger *zap.Logger) error {
 	}
 
 	// Configuring bot
-	botAPI, err := tgbotapi.NewBotAPI(botToken)
-	if err != nil {
-		return err
+	if botToken != "" {
+		botAPI, err := tgbotapi.NewBotAPI(botToken)
+		if err != nil {
+			return err
+		}
+		bot := telegram.NewBot(ctx, botAPI, db, logger.Named("telegram"))
+		bot.Start()
 	}
-	bot := telegram.NewBot(ctx, botAPI, db, logger.Named("telegram"))
-	bot.Start()
 
 	// Configuring gin
 	router := gin.Default()
+	router.Use(cors.Default())
 	apiGroup := router.Group("/api")
 	{
 		usersAPI := api.NewUsersAPI(ctx, db, logger.Named("api/users"))

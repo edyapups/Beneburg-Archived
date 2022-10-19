@@ -32,6 +32,7 @@ func NewUsersAPI(ctx context.Context, db database.Database, logger *zap.Logger) 
 
 func (u usersApi) RegisterRoutes(router *gin.RouterGroup) {
 	router.GET("/users/:userId", u.GetUser)
+	router.GET("/users", u.ListUsers)
 }
 
 func (u usersApi) GetUser(g *gin.Context) {
@@ -51,6 +52,10 @@ func (u usersApi) GetUser(g *gin.Context) {
 }
 
 func (u usersApi) ListUsers(g *gin.Context) {
-	//TODO implement me
-	panic("implement me")
+	users, err := u.db.GetAllUsers(u.ctx)
+	if err != nil {
+		g.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	g.JSON(200, users)
 }
