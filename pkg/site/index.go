@@ -8,21 +8,21 @@ import (
 	"net/http"
 )
 
-type indexConfig struct {
+type IndexConfig struct {
 	logger *zap.Logger
 	ctx    context.Context
 	db     database.Database
 }
 
-func NewIndexConfig(logger *zap.Logger, ctx context.Context, db database.Database) *indexConfig {
-	return &indexConfig{
+func NewIndexConfig(ctx context.Context, db database.Database, logger *zap.Logger) *IndexConfig {
+	return &IndexConfig{
 		logger: logger,
 		ctx:    ctx,
 		db:     db,
 	}
 }
 
-func (i indexConfig) Index(c *gin.Context) {
+func (i IndexConfig) Index(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"title": "Home Page",
 	})

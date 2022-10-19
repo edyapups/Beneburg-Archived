@@ -4,12 +4,16 @@ import (
 	"beneburg/pkg/database"
 	"beneburg/pkg/database/model"
 	"beneburg/pkg/site"
+	"beneburg/pkg/telegram"
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -34,7 +38,11 @@ func run(logger *zap.Logger) error {
 	dbHost := os.Getenv("MYSQL_HOST")
 	dbPort := os.Getenv("MYSQL_PORT")
 	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
+	botToken := os.Getenv("BOT_TOKEN")
 
+	if len(botToken) == 0 {
+		return fmt.Errorf("BOT_TOKEN must be specified")
+	}
 	if dbHost == "" {
 		dbHost = "localhost"
 	}
@@ -43,7 +51,7 @@ func run(logger *zap.Logger) error {
 	}
 
 	dataSourceName := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
-	db, err := database.NewDatabase(ctx, dataSourceName, logger)
+	db, err := database.NewDatabase(ctx, dataSourceName, logger.Named("database"))
 	if err != nil {
 		return err
 	}
@@ -64,17 +72,24 @@ func run(logger *zap.Logger) error {
 		return nil
 	}
 
+	// Configuring bot
+	botAPI, err := tgbotapi.NewBotAPI(botToken)
+	if err != nil {
+		return err
+	}
+	bot := telegram.NewBot(ctx, botAPI, db, logger.Named("telegram"))
+	bot.Start()
+
+	// Configuring gin
 	router := gin.Default()
 	router.Static("/static", "./static")
 	router.LoadHTMLGlob("templates/*")
-
-	index := site.NewIndexConfig(logger, ctx, db)
-
+	index := site.NewIndexConfig(ctx, db, logger.Named("site"))
 	router.GET("/", index.Index)
 
-	errChan := make(chan error)
-
+	// Starting server
 	logger.Info("Starting server...")
+	errChan := make(chan error)
 	go func() {
 		errChan <- router.Run(":8080")
 	}()
@@ -89,7 +104,13 @@ func run(logger *zap.Logger) error {
 		return err
 	case sig := <-sigs:
 		logger.Info("Received signal", zap.String("signal", sig.String()))
-		return nil
+		cancel()
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(time.Second * 10):
+			return fmt.Errorf("timeout while waiting for context to be done")
+		}
 	case <-ctx.Done():
 		return ctx.Err()
 	}
