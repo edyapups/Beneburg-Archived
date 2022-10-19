@@ -7,9 +7,14 @@ services:
       - db:/var/lib/mysql
     networks:
       - backend
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      timeout: 3s
+      retries: 10
   server:
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     container_name: server
     env_file: .env
     build:
@@ -18,6 +23,8 @@ services:
     ports:
       - "8080:8080"
     restart: always
+    networks:
+      - backend
 
 
 volumes:
