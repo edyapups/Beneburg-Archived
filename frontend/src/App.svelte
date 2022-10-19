@@ -1,9 +1,20 @@
-<script lang="ts">
+<script>
+    import Router from 'svelte-spa-router';
+    import Home from "./routers/Home.svelte";
+    import NotFound from "./routers/NotFound.svelte";
+    import {location} from 'svelte-spa-router'
+    import Header from "./lib/Header.svelte";
 
+    const routes = {
+        '/': Home,
+        '*': NotFound,
+    }
 </script>
 
-<main>
-<h1 class="px-4 py-5 my-5 text-center">
-    Тут пока ничего нет
-</h1>
-</main>
+<body>
+    <Header />
+    <Router {routes}/>
+    <div class="container mt-4"><p>The current page is: {$location}</p></div>
+</body>
+
+
