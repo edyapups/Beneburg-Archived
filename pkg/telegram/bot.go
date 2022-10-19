@@ -92,16 +92,26 @@ func (b *Bot) processUpdate(update tgbotapi.Update) {
 }
 
 func (b *Bot) processPrivateMessage(message *tgbotapi.Message) {
-	b.logger.Named("processPrivateMessage").Warn("Not implemented")
+	if message.IsCommand() {
+		b.processPrivateCommand(message)
+		return
+	}
+
+	if message.Text == "ping" {
+		b.processPing(message)
+		return
+	}
 }
 
 func (b *Bot) processGroupMessage(message *tgbotapi.Message) {
 	if message.IsCommand() {
 		b.processGroupCommand(message)
+		return
 	}
 
 	if message.Text == "ping" {
 		b.processPing(message)
+		return
 	}
 }
 
@@ -115,4 +125,8 @@ func (b *Bot) processPing(message *tgbotapi.Message) {
 		b.logger.Named("processPing").Error("Error while sending message", zap.Error(err))
 		return
 	}
+}
+
+func (b *Bot) processPrivateCommand(message *tgbotapi.Message) {
+	b.logger.Named("processPrivateCommand").Warn("Not implemented")
 }
