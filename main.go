@@ -2,7 +2,6 @@ package main
 
 import (
 	"beneburg/pkg/database"
-	"beneburg/pkg/site"
 	"beneburg/pkg/telegram"
 	"context"
 	"fmt"
@@ -76,10 +75,6 @@ func run(logger *zap.Logger) error {
 
 	// Configuring gin
 	router := gin.Default()
-	router.Static("/static", "./static")
-	router.LoadHTMLGlob("templates/*")
-	index := site.NewIndexConfig(ctx, db, logger.Named("site"))
-	router.GET("/", index.Index)
 
 	// Starting server
 	logger.Info("Starting server...")

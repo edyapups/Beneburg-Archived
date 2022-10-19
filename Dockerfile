@@ -19,8 +19,6 @@ FROM gcr.io/distroless/base-debian10
 
 WORKDIR /
 
-COPY templates /templates
-COPY static /static
 COPY --from=build /main /main
 
 EXPOSE 443
