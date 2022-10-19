@@ -18,6 +18,8 @@ RUN go build -o /main
 FROM gcr.io/distroless/base-debian10
 
 WORKDIR /
+
+COPY migrations /migrations
 COPY templates /templates
 COPY static /static
 COPY --from=build /main /main
