@@ -32,37 +32,38 @@ func run(logger *zap.Logger) error {
 	dbUser := os.Getenv("MYSQL_USER")
 	dbPassword := os.Getenv("MYSQL_PASSWORD")
 	dbHost := os.Getenv("MYSQL_HOST")
+	dbPort := os.Getenv("MYSQL_PORT")
+	forceMigrationStr := os.Getenv("FORCE_MIGRATION")
+
 	if dbHost == "" {
 		dbHost = "localhost"
 	}
-	dbPort := os.Getenv("MYSQL_PORT")
 	if dbPort == "" {
 		dbPort = "3306"
 	}
-	forceMigrationStr := os.Getenv("FORCE_MIGRATION")
 	forceMigration, err := strconv.Atoi(forceMigrationStr)
 	if err != nil && forceMigrationStr != "" {
 		return err
 	}
 
-	dataSourceName := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
+	dataSourceName := constructDBSourceName(dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := database.NewDatabase(ctx, logger, dataSourceName)
 	if err != nil {
 		return err
 	}
-	defer func(db database.Database) {
-		_ = db.Close()
-	}(db)
+	defer func(db database.Database) { _ = db.Close() }(db)
 
 	err = db.PingContext(ctx)
 	if err != nil {
 		return err
 	}
 
+	logger.Info("Making migrations...")
 	err = db.MakeMigrations(forceMigration)
 	if err != nil {
 		return err
 	}
+	logger.Info("Migrations done")
 
 	router := gin.Default()
 	router.Static("/static", "./static")
@@ -73,12 +74,17 @@ func run(logger *zap.Logger) error {
 	router.GET("/", index.Index)
 
 	errChan := make(chan error)
+
+	logger.Info("Starting server...")
 	go func() {
 		errChan <- router.Run(":8080")
 	}()
+	logger.Info("Server started")
+
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
+	logger.Info("All ready")
 	select {
 	case err := <-errChan:
 		return err
@@ -88,4 +94,8 @@ func run(logger *zap.Logger) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func constructDBSourceName(dbUser string, dbPassword string, dbHost string, dbPort string, dbName string) string {
+	return dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
 }
