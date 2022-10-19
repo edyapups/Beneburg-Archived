@@ -2,13 +2,13 @@ package main
 
 import (
 	"beneburg/pkg/database"
+	"beneburg/pkg/database/model"
 	"beneburg/pkg/site"
 	"context"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 )
 
@@ -33,7 +33,6 @@ func run(logger *zap.Logger) error {
 	dbPassword := os.Getenv("MYSQL_PASSWORD")
 	dbHost := os.Getenv("MYSQL_HOST")
 	dbPort := os.Getenv("MYSQL_PORT")
-	forceMigrationStr := os.Getenv("FORCE_MIGRATION")
 
 	if dbHost == "" {
 		dbHost = "localhost"
@@ -41,29 +40,21 @@ func run(logger *zap.Logger) error {
 	if dbPort == "" {
 		dbPort = "3306"
 	}
-	forceMigration, err := strconv.Atoi(forceMigrationStr)
-	if err != nil && forceMigrationStr != "" {
-		return err
-	}
 
-	dataSourceName := constructDBSourceName(dbUser, dbPassword, dbHost, dbPort, dbName)
-	db, err := database.NewDatabase(ctx, logger, dataSourceName)
-	if err != nil {
-		return err
-	}
-	defer func(db database.Database) { _ = db.Close() }(db)
-
-	err = db.PingContext(ctx)
+	dataSourceName := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
+	db, err := database.NewDatabase(ctx, dataSourceName, logger)
 	if err != nil {
 		return err
 	}
 
-	logger.Info("Making migrations...")
-	err = db.MakeMigrations(forceMigration)
+	// Making migrations
+	err = db.AutoMigrate(&model.User{})
 	if err != nil {
 		return err
 	}
-	logger.Info("Migrations done")
+
+	// Generating query schema
+	db.GenerateCode(&model.User{})
 
 	router := gin.Default()
 	router.Static("/static", "./static")
@@ -94,8 +85,4 @@ func run(logger *zap.Logger) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
-}
-
-func constructDBSourceName(dbUser string, dbPassword string, dbHost string, dbPort string, dbName string) string {
-	return dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
 }
