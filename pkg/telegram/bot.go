@@ -10,8 +10,9 @@ import (
 
 //go:generate mockgen -source=bot.go -destination=./mocks/mock_bot.go -package=mock_telegram
 type Bot struct {
-	bot TgBotAPI
-	db  database.Database
+	bot       TgBotAPI
+	db        database.Database
+	templator Templator
 
 	messageQueue chan tgbotapi.Update
 
@@ -21,10 +22,11 @@ type Bot struct {
 
 func NewBot(ctx context.Context, bot TgBotAPI, db database.Database, logger *zap.Logger) *Bot {
 	return &Bot{
-		bot:    bot,
-		db:     db,
-		ctx:    ctx,
-		logger: logger,
+		bot:       bot,
+		templator: NewTemplator(),
+		db:        db,
+		ctx:       ctx,
+		logger:    logger,
 	}
 }
 
@@ -73,6 +75,7 @@ func (b *Bot) startProcessingUpdates() {
 }
 
 func (b *Bot) processUpdate(update tgbotapi.Update) {
+	b.logger.Named("processUpdate").Debug("Processing update", zap.Any("update", update))
 	if update.Message != nil && update.Message.Chat != nil && update.Message.Chat.Type == "private" {
 		b.logger.Debug("New private message",
 			zap.String("user", update.Message.From.String()),
@@ -81,7 +84,7 @@ func (b *Bot) processUpdate(update tgbotapi.Update) {
 		b.processPrivateMessage(update.Message)
 	}
 
-	if update.Message != nil && update.Message.Chat != nil && update.Message.Chat.Type == "group" {
+	if update.Message != nil && update.Message.Chat != nil && (update.Message.Chat.Type == "group" || update.Message.Chat.Type == "supergroup") {
 		b.logger.Debug("New group message",
 			zap.String("user", update.Message.From.String()),
 			zap.String("chat", update.Message.Chat.Title),
@@ -116,7 +119,10 @@ func (b *Bot) processGroupMessage(message *tgbotapi.Message) {
 }
 
 func (b *Bot) processGroupCommand(message *tgbotapi.Message) {
-	b.logger.Named("processGroupCommand").Warn("Not implemented")
+	if message.Command() == "info" {
+		b.processInfoCommand(message)
+		return
+	}
 }
 
 func (b *Bot) processPing(message *tgbotapi.Message) {
@@ -129,4 +135,35 @@ func (b *Bot) processPing(message *tgbotapi.Message) {
 
 func (b *Bot) processPrivateCommand(message *tgbotapi.Message) {
 	b.logger.Named("processPrivateCommand").Warn("Not implemented")
+}
+
+func (b *Bot) processInfoCommand(message *tgbotapi.Message) {
+	if message.ReplyToMessage == nil || message.ReplyToMessage.From == nil {
+		_, err := b.bot.Send(tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandNoReply()))
+		if err != nil {
+			b.logger.Named("processInfoCommand").Error("Error while sending message", zap.Error(err))
+			return
+		}
+		return
+	}
+	user, err := b.db.GetUserByTelegramID(message.ReplyToMessage.From.ID)
+	if err != nil {
+		b.logger.Named("processInfoCommand").Error("Error while getting user from db", zap.Error(err))
+		return
+	}
+	if user == nil {
+		_, err := b.bot.Send(tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandNoUser()))
+		if err != nil {
+			b.logger.Named("processInfoCommand").Error("Error while sending message", zap.Error(err))
+			return
+		}
+		return
+	}
+	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandReply(user))
+	msg.ParseMode = tgbotapi.ModeHTML
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		b.logger.Named("processInfoCommand").Error("Error while sending message", zap.Error(err))
+		return
+	}
 }

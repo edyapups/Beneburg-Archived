@@ -10,7 +10,7 @@ type User struct {
 	Username    *string `gorm:"column:username" json:"username"`
 	Name        string  `gorm:"column:name" json:"name"`
 	Age         *int32  `gorm:"column:age" json:"age"`
-	Sex         *string `gorm:"column:sex" json:"sex"`
+	Sex         *string `gorm:"column:sex" json:"sex"` // TODO: make enum
 	About       *string `gorm:"column:about" json:"about"`
 	Hobbies     *string `gorm:"column:hobbies" json:"hobbies"`
 	Work        *string `gorm:"column:work" json:"work"`
