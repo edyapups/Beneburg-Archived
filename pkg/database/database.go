@@ -10,9 +10,15 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -source=database.go -destination=./mocks/mock_database.go -package=mock_database
 type Database interface {
 	AutoMigrate(models ...interface{}) error
 	CreateUser(user *model.User) error
+
+	// CreateToken creates a new token for the given telegramID and returns token's uuid.
+	CreateToken(telegramID int64) (string, error)
+
+	// GenerateCode generates gorm code for the given models.
 	GenerateCode(models ...interface{})
 	GetAllUsers() ([]*model.User, error)
 	GetUserByID(id uint) (*model.User, error)
@@ -26,6 +32,11 @@ type database struct {
 
 	ctx    context.Context
 	logger *zap.Logger
+}
+
+func (d database) CreateToken(telegramID int64) (string, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (d database) AutoMigrate(models ...interface{}) error {

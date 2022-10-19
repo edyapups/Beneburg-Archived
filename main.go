@@ -33,6 +33,7 @@ func run(logger *zap.Logger) error {
 	dbPassword := os.Getenv("MYSQL_PASSWORD")
 	dbHost := os.Getenv("MYSQL_HOST")
 	dbPort := os.Getenv("MYSQL_PORT")
+	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
 
 	if dbHost == "" {
 		dbHost = "localhost"
@@ -47,14 +48,21 @@ func run(logger *zap.Logger) error {
 		return err
 	}
 
+	models := []interface{}{&model.User{}, &model.Token{}}
+
 	// Making migrations
-	err = db.AutoMigrate(&model.User{})
+	err = db.AutoMigrate(models...)
 	if err != nil {
 		return err
 	}
 
 	// Generating query schema
-	db.GenerateCode(&model.User{})
+	db.GenerateCode(models...)
+
+	if onlyMakeMigrations {
+		logger.Info("Migrations and code generation were made, exiting...")
+		return nil
+	}
 
 	router := gin.Default()
 	router.Static("/static", "./static")

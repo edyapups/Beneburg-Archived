@@ -15,23 +15,26 @@ import (
 
 func Use(db *gorm.DB) *Query {
 	return &Query{
-		db:   db,
-		User: newUser(db),
+		db:    db,
+		Token: newToken(db),
+		User:  newUser(db),
 	}
 }
 
 type Query struct {
 	db *gorm.DB
 
-	User user
+	Token token
+	User  user
 }
 
 func (q *Query) Available() bool { return q.db != nil }
 
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
-		db:   db,
-		User: q.User.clone(db),
+		db:    db,
+		Token: q.Token.clone(db),
+		User:  q.User.clone(db),
 	}
 }
 
@@ -48,12 +51,14 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 }
 
 type queryCtx struct {
-	User *userDo
+	Token *tokenDo
+	User  *userDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		User: q.User.WithContext(ctx),
+		Token: q.Token.WithContext(ctx),
+		User:  q.User.WithContext(ctx),
 	}
 }
 
