@@ -30,7 +30,7 @@ func newUser(db *gorm.DB) user {
 	_user.CreatedAt = field.NewTime(tableName, "created_at")
 	_user.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_user.DeletedAt = field.NewField(tableName, "deleted_at")
-	_user.TelegramID = field.NewInt32(tableName, "telegram_id")
+	_user.TelegramID = field.NewInt64(tableName, "telegram_id")
 	_user.Username = field.NewString(tableName, "username")
 	_user.Name = field.NewString(tableName, "name")
 	_user.Age = field.NewInt32(tableName, "age")
@@ -57,7 +57,7 @@ type user struct {
 	CreatedAt   field.Time
 	UpdatedAt   field.Time
 	DeletedAt   field.Field
-	TelegramID  field.Int32
+	TelegramID  field.Int64
 	Username    field.String
 	Name        field.String
 	Age         field.Int32
@@ -90,7 +90,7 @@ func (u *user) updateTableName(table string) *user {
 	u.CreatedAt = field.NewTime(table, "created_at")
 	u.UpdatedAt = field.NewTime(table, "updated_at")
 	u.DeletedAt = field.NewField(table, "deleted_at")
-	u.TelegramID = field.NewInt32(table, "telegram_id")
+	u.TelegramID = field.NewInt64(table, "telegram_id")
 	u.Username = field.NewString(table, "username")
 	u.Name = field.NewString(table, "name")
 	u.Age = field.NewInt32(table, "age")
