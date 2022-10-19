@@ -13,15 +13,15 @@ import (
 //go:generate mockgen -source=database.go -destination=./mocks/mock_database.go -package=mock_database
 type Database interface {
 	AutoMigrate(models ...interface{}) error
-	CreateUser(user *model.User) error
+	CreateUser(ctx context.Context, user *model.User) error
 
 	// CreateToken creates a new token for the given telegramID and returns token's uuid.
-	CreateToken(telegramID int64) (string, error)
-	GetAllUsers() ([]*model.User, error)
-	GetUserByID(id uint) (*model.User, error)
-	GetUserByTelegramID(telegramID int64) (*model.User, error)
-	UpdateUserByID(id uint, user *model.User) (*gen.ResultInfo, error)
-	UpdateUserByTelegramID(telegramID int64, user *model.User) (*gen.ResultInfo, error)
+	CreateToken(ctx context.Context, telegramID int64) (string, error)
+	GetAllUsers(ctx context.Context) ([]*model.User, error)
+	GetUserByID(ctx context.Context, id uint) (*model.User, error)
+	GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.User, error)
+	UpdateUserByID(ctx context.Context, id uint, user *model.User) (*gen.ResultInfo, error)
+	UpdateUserByTelegramID(ctx context.Context, telegramID int64, user *model.User) (*gen.ResultInfo, error)
 }
 
 var Models = []interface{}{model.User{}, model.Token{}}
@@ -29,11 +29,10 @@ var Models = []interface{}{model.User{}, model.Token{}}
 type database struct {
 	db *gorm.DB
 
-	ctx    context.Context
 	logger *zap.Logger
 }
 
-func (d database) CreateToken(telegramID int64) (string, error) {
+func (d database) CreateToken(ctx context.Context, telegramID int64) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -46,27 +45,27 @@ func (d database) AutoMigrate(models ...interface{}) error {
 	return nil
 }
 
-func (d database) CreateUser(user *model.User) error {
+func (d database) CreateUser(ctx context.Context, user *model.User) error {
 	u := query.Use(d.db).User
-	err := u.WithContext(d.ctx).Create(user)
+	err := u.WithContext(ctx).Create(user)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d database) GetAllUsers() ([]*model.User, error) {
+func (d database) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	u := query.Use(d.db).User
-	all, err := u.WithContext(d.ctx).Find()
+	all, err := u.WithContext(ctx).Find()
 	if err != nil {
 		return nil, err
 	}
 	return all, nil
 }
 
-func (d database) GetUserByID(id uint) (*model.User, error) {
+func (d database) GetUserByID(ctx context.Context, id uint) (*model.User, error) {
 	u := query.Use(d.db).User
-	first, err := u.WithContext(d.ctx).Where(u.ID.Eq(id)).First()
+	first, err := u.WithContext(ctx).Where(u.ID.Eq(id)).First()
 	if err != nil {
 		return nil, err
 	}
@@ -74,9 +73,9 @@ func (d database) GetUserByID(id uint) (*model.User, error) {
 	return first, nil
 }
 
-func (d database) GetUserByTelegramID(telegramID int64) (*model.User, error) {
+func (d database) GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.User, error) {
 	u := query.Use(d.db).User
-	first, err := u.WithContext(d.ctx).Where(u.TelegramID.Eq(telegramID)).First()
+	first, err := u.WithContext(ctx).Where(u.TelegramID.Eq(telegramID)).First()
 	if err != nil {
 		return nil, err
 	}
@@ -84,18 +83,18 @@ func (d database) GetUserByTelegramID(telegramID int64) (*model.User, error) {
 	return first, nil
 }
 
-func (d database) UpdateUserByID(id uint, user *model.User) (*gen.ResultInfo, error) {
+func (d database) UpdateUserByID(ctx context.Context, id uint, user *model.User) (*gen.ResultInfo, error) {
 	u := query.Use(d.db).User
-	update, err := u.WithContext(d.ctx).Update(u.ID.Eq(id), user)
+	update, err := u.WithContext(ctx).Update(u.ID.Eq(id), user)
 	if err != nil {
 		return nil, err
 	}
 
 	return &update, nil
 }
-func (d database) UpdateUserByTelegramID(telegramID int64, user *model.User) (*gen.ResultInfo, error) {
+func (d database) UpdateUserByTelegramID(ctx context.Context, telegramID int64, user *model.User) (*gen.ResultInfo, error) {
 	u := query.Use(d.db).User
-	update, err := u.WithContext(d.ctx).Update(u.TelegramID.Eq(telegramID), user)
+	update, err := u.WithContext(ctx).Update(u.TelegramID.Eq(telegramID), user)
 	if err != nil {
 		return nil, err
 	}
@@ -103,15 +102,15 @@ func (d database) UpdateUserByTelegramID(telegramID int64, user *model.User) (*g
 	return &update, nil
 }
 
-func NewDatabase(ctx context.Context, dsn string, logger *zap.Logger) (Database, error) {
+func NewDatabase(dsn string, logger *zap.Logger) (Database, error) {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
-	return &database{db, ctx, logger}, nil
+	return &database{db, logger}, nil
 }
 
-func NewDatabaseWithDb(ctx context.Context, db *gorm.DB, logger *zap.Logger) Database {
-	return &database{db, ctx, logger}
+func NewDatabaseWithDb(db *gorm.DB, logger *zap.Logger) Database {
+	return &database{db, logger}
 }

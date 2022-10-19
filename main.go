@@ -49,7 +49,7 @@ func run(logger *zap.Logger) error {
 	}
 
 	dataSourceName := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
-	db, err := database.NewDatabase(ctx, dataSourceName, logger.Named("database"))
+	db, err := database.NewDatabase(dataSourceName, logger.Named("database"))
 	if err != nil {
 		return err
 	}

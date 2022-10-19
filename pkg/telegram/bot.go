@@ -146,7 +146,7 @@ func (b *Bot) processInfoCommand(message *tgbotapi.Message) {
 		}
 		return
 	}
-	user, err := b.db.GetUserByTelegramID(message.ReplyToMessage.From.ID)
+	user, err := b.db.GetUserByTelegramID(b.ctx, message.ReplyToMessage.From.ID)
 	if err != nil {
 		b.logger.Named("processInfoCommand").Error("Error while getting user from db", zap.Error(err))
 		return
