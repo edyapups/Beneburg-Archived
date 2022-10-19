@@ -3,11 +3,13 @@ module beneburg
 go 1.19
 
 require (
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/golang/mock v1.6.0
 	github.com/stretchr/testify v1.8.0
 	go.uber.org/zap v1.23.0
+	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
 	gorm.io/driver/mysql v1.4.0
 	gorm.io/gen v0.3.17
 	gorm.io/gorm v1.24.0
