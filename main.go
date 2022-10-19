@@ -1,6 +1,7 @@
 package main
 
 import (
+	"beneburg/pkg/api"
 	"beneburg/pkg/database"
 	"beneburg/pkg/telegram"
 	"context"
@@ -75,6 +76,11 @@ func run(logger *zap.Logger) error {
 
 	// Configuring gin
 	router := gin.Default()
+	apiGroup := router.Group("/api")
+	{
+		usersAPI := api.NewUsersAPI(ctx, db, logger.Named("api/users"))
+		usersAPI.RegisterRoutes(apiGroup)
+	}
 
 	// Starting server
 	logger.Info("Starting server...")
