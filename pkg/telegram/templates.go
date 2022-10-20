@@ -43,8 +43,8 @@ func (t templator) InfoCommandReply(user *model.User) string {
 		AddDelimiter(&stringBuilder)
 	}
 
-	if user.Sex != nil {
-		stringBuilder.WriteString(FieldStringWithBoldKey(userSexDescription, *user.Sex))
+	if user.Sex != "undefined" {
+		stringBuilder.WriteString(FieldStringWithBoldKey(userSexDescription, user.RuSex()))
 		AddDelimiter(&stringBuilder)
 	}
 

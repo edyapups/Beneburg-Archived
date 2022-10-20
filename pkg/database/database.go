@@ -8,15 +8,16 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gen"
 	"gorm.io/gorm"
+	"time"
 )
 
 //go:generate mockgen -source=database.go -destination=./mocks/mock_database.go -package=mock_database
 type Database interface {
 	AutoMigrate(models ...interface{}) error
-	CreateUser(ctx context.Context, user *model.User) error
+	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
 
 	// CreateToken creates a new token for the given telegramID and returns token's uuid.
-	CreateToken(ctx context.Context, telegramID int64) (string, error)
+	CreateToken(ctx context.Context, telegramID int64) (*model.Token, error)
 	GetAllUsers(ctx context.Context) ([]*model.User, error)
 	GetUserByID(ctx context.Context, id uint) (*model.User, error)
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.User, error)
@@ -32,9 +33,17 @@ type database struct {
 	logger *zap.Logger
 }
 
-func (d database) CreateToken(ctx context.Context, telegramID int64) (string, error) {
-	//TODO implement me
-	panic("implement me")
+func (d database) CreateToken(ctx context.Context, telegramID int64) (*model.Token, error) {
+	t := query.Use(d.db).Token
+	token := model.Token{
+		UserTelegramId: telegramID,
+		ExpireAt:       time.Now().Add(time.Hour * 24),
+	}
+	err := t.WithContext(ctx).Create(&token)
+	if err != nil {
+		return nil, err
+	}
+	return &token, nil
 }
 
 func (d database) AutoMigrate(models ...interface{}) error {
@@ -45,13 +54,13 @@ func (d database) AutoMigrate(models ...interface{}) error {
 	return nil
 }
 
-func (d database) CreateUser(ctx context.Context, user *model.User) error {
+func (d database) CreateUser(ctx context.Context, user *model.User) (*model.User, error) {
 	u := query.Use(d.db).User
 	err := u.WithContext(ctx).Create(user)
 	if err != nil {
-		return err
+		return user, err
 	}
-	return nil
+	return user, nil
 }
 
 func (d database) GetAllUsers(ctx context.Context) ([]*model.User, error) {

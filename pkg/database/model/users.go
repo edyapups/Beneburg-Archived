@@ -10,7 +10,7 @@ type User struct {
 	Username    *string `gorm:"column:username" json:"username"`
 	Name        string  `gorm:"column:name" json:"name"`
 	Age         *int32  `gorm:"column:age" json:"age"`
-	Sex         *string `gorm:"column:sex" json:"sex"` // TODO: make enum
+	Sex         string  `gorm:"column:sex; type:enum('male', 'female', 'nonbinary', 'undefined');default:'undefined'" json:"sex"`
 	About       *string `gorm:"column:about" json:"about"`
 	Hobbies     *string `gorm:"column:hobbies" json:"hobbies"`
 	Work        *string `gorm:"column:work" json:"work"`
@@ -23,4 +23,20 @@ type User struct {
 
 func (*User) TableName() string {
 	return TableNameUser
+}
+
+func (u *User) RuSex() string {
+	if u == nil {
+		return ""
+	}
+	switch u.Sex {
+	case "male":
+		return "мужской"
+	case "female":
+		return "женский"
+	case "nonbinary":
+		return "небинарный"
+	default:
+		return "не указан"
+	}
 }

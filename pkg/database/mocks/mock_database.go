@@ -6,6 +6,7 @@ package mock_database
 
 import (
 	model "beneburg/pkg/database/model"
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -54,121 +55,106 @@ func (mr *MockDatabaseMockRecorder) AutoMigrate(models ...interface{}) *gomock.C
 }
 
 // CreateToken mocks base method.
-func (m *MockDatabase) CreateToken(telegramID int64) (string, error) {
+func (m *MockDatabase) CreateToken(ctx context.Context, telegramID int64) (*model.Token, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateToken", telegramID)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "CreateToken", ctx, telegramID)
+	ret0, _ := ret[0].(*model.Token)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateToken indicates an expected call of CreateToken.
-func (mr *MockDatabaseMockRecorder) CreateToken(telegramID interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) CreateToken(ctx, telegramID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateToken", reflect.TypeOf((*MockDatabase)(nil).CreateToken), telegramID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateToken", reflect.TypeOf((*MockDatabase)(nil).CreateToken), ctx, telegramID)
 }
 
 // CreateUser mocks base method.
-func (m *MockDatabase) CreateUser(user *model.User) error {
+func (m *MockDatabase) CreateUser(ctx context.Context, user *model.User) (*model.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUser", user)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "CreateUser", ctx, user)
+	ret0, _ := ret[0].(*model.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateUser indicates an expected call of CreateUser.
-func (mr *MockDatabaseMockRecorder) CreateUser(user interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) CreateUser(ctx, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockDatabase)(nil).CreateUser), user)
-}
-
-// GenerateCode mocks base method.
-func (m *MockDatabase) GenerateCode(models ...interface{}) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range models {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "GenerateCode", varargs...)
-}
-
-// GenerateCode indicates an expected call of GenerateCode.
-func (mr *MockDatabaseMockRecorder) GenerateCode(models ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateCode", reflect.TypeOf((*MockDatabase)(nil).GenerateCode), models...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockDatabase)(nil).CreateUser), ctx, user)
 }
 
 // GetAllUsers mocks base method.
-func (m *MockDatabase) GetAllUsers() ([]*model.User, error) {
+func (m *MockDatabase) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllUsers")
+	ret := m.ctrl.Call(m, "GetAllUsers", ctx)
 	ret0, _ := ret[0].([]*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllUsers indicates an expected call of GetAllUsers.
-func (mr *MockDatabaseMockRecorder) GetAllUsers() *gomock.Call {
+func (mr *MockDatabaseMockRecorder) GetAllUsers(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllUsers", reflect.TypeOf((*MockDatabase)(nil).GetAllUsers))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllUsers", reflect.TypeOf((*MockDatabase)(nil).GetAllUsers), ctx)
 }
 
 // GetUserByID mocks base method.
-func (m *MockDatabase) GetUserByID(id uint) (*model.User, error) {
+func (m *MockDatabase) GetUserByID(ctx context.Context, id uint) (*model.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByID", id)
+	ret := m.ctrl.Call(m, "GetUserByID", ctx, id)
 	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserByID indicates an expected call of GetUserByID.
-func (mr *MockDatabaseMockRecorder) GetUserByID(id interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) GetUserByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockDatabase)(nil).GetUserByID), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockDatabase)(nil).GetUserByID), ctx, id)
 }
 
 // GetUserByTelegramID mocks base method.
-func (m *MockDatabase) GetUserByTelegramID(telegramID int64) (*model.User, error) {
+func (m *MockDatabase) GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByTelegramID", telegramID)
+	ret := m.ctrl.Call(m, "GetUserByTelegramID", ctx, telegramID)
 	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserByTelegramID indicates an expected call of GetUserByTelegramID.
-func (mr *MockDatabaseMockRecorder) GetUserByTelegramID(telegramID interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) GetUserByTelegramID(ctx, telegramID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByTelegramID", reflect.TypeOf((*MockDatabase)(nil).GetUserByTelegramID), telegramID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByTelegramID", reflect.TypeOf((*MockDatabase)(nil).GetUserByTelegramID), ctx, telegramID)
 }
 
 // UpdateUserByID mocks base method.
-func (m *MockDatabase) UpdateUserByID(id uint, user *model.User) (*gen.ResultInfo, error) {
+func (m *MockDatabase) UpdateUserByID(ctx context.Context, id uint, user *model.User) (*gen.ResultInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateUserByID", id, user)
+	ret := m.ctrl.Call(m, "UpdateUserByID", ctx, id, user)
 	ret0, _ := ret[0].(*gen.ResultInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateUserByID indicates an expected call of UpdateUserByID.
-func (mr *MockDatabaseMockRecorder) UpdateUserByID(id, user interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) UpdateUserByID(ctx, id, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserByID", reflect.TypeOf((*MockDatabase)(nil).UpdateUserByID), id, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserByID", reflect.TypeOf((*MockDatabase)(nil).UpdateUserByID), ctx, id, user)
 }
 
 // UpdateUserByTelegramID mocks base method.
-func (m *MockDatabase) UpdateUserByTelegramID(telegramID int64, user *model.User) (*gen.ResultInfo, error) {
+func (m *MockDatabase) UpdateUserByTelegramID(ctx context.Context, telegramID int64, user *model.User) (*gen.ResultInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateUserByTelegramID", telegramID, user)
+	ret := m.ctrl.Call(m, "UpdateUserByTelegramID", ctx, telegramID, user)
 	ret0, _ := ret[0].(*gen.ResultInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateUserByTelegramID indicates an expected call of UpdateUserByTelegramID.
-func (mr *MockDatabaseMockRecorder) UpdateUserByTelegramID(telegramID, user interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) UpdateUserByTelegramID(ctx, telegramID, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserByTelegramID", reflect.TypeOf((*MockDatabase)(nil).UpdateUserByTelegramID), telegramID, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserByTelegramID", reflect.TypeOf((*MockDatabase)(nil).UpdateUserByTelegramID), ctx, telegramID, user)
 }

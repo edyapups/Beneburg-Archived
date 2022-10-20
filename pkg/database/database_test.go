@@ -20,7 +20,7 @@ func Test_database_AutoMigrate(t *testing.T) {
 
 	engine, err := gorm.Open(mysql.New(mysql.Config{Conn: dbMock}), &gorm.Config{})
 	assert.NoError(t, err)
-	db := NewDatabaseWithDb(ctx, engine, nil)
+	db := NewDatabaseWithDb(engine, nil)
 
 	t.Run("Get user by id", func(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `users` WHERE `users`.`id` = ? AND `users`.`deleted_at` IS NULL ORDER BY `users`.`id` LIMIT 1")).
@@ -41,7 +41,7 @@ func Test_database_AutoMigrate(t *testing.T) {
 				"is_bot",
 				"is_active"}).AddRow(
 				10, 0, "", "", 0, "", "", "", "", "", "", "", false, false))
-		user, err := db.GetUserByID(10)
+		user, err := db.GetUserByID(ctx, 10)
 		assert.NoError(t, err)
 		assert.Equal(t, uint(10), user.ID)
 	})
@@ -69,12 +69,12 @@ func Test_database_AutoMigrate(t *testing.T) {
 			).WillReturnResult(sqlmock.NewResult(10, 1))
 		mock.ExpectCommit()
 
-		err := db.CreateUser(&model.User{
+		_, err := db.CreateUser(ctx, &model.User{
 			TelegramID:  10,
 			Username:    getAddress("test"),
 			Name:        "test",
 			Age:         getAddress(int32(10)),
-			Sex:         getAddress("test"),
+			Sex:         "test",
 			About:       getAddress("test"),
 			Hobbies:     getAddress("test"),
 			Work:        getAddress("test"),
