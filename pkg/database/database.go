@@ -23,6 +23,7 @@ type Database interface {
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.User, error)
 	UpdateUserByID(ctx context.Context, id uint, user *model.User) (*gen.ResultInfo, error)
 	UpdateUserByTelegramID(ctx context.Context, telegramID int64, user *model.User) (*gen.ResultInfo, error)
+	GetUserIDByToken(ctx context.Context, token string) (uint, error)
 }
 
 var Models = []interface{}{model.User{}, model.Token{}}
@@ -31,6 +32,19 @@ type database struct {
 	db *gorm.DB
 
 	logger *zap.Logger
+}
+
+var _ Database = database{}
+
+func (d database) GetUserIDByToken(ctx context.Context, token string) (uint, error) {
+	q := query.Use(d.db)
+	t := q.Token
+	u := q.User
+	userId, err := u.WithContext(ctx).Select(u.ID).Join(t, u.TelegramID.EqCol(t.UserTelegramId)).Where(t.UUID.Eq(token)).Where(t.ExpireAt.Gt(time.Now())).Take()
+	if err != nil {
+		return 0, err
+	}
+	return userId.ID, nil
 }
 
 func (d database) CreateToken(ctx context.Context, telegramID int64) (*model.Token, error) {

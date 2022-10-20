@@ -3,6 +3,7 @@ package main
 import (
 	"beneburg/pkg/api"
 	"beneburg/pkg/database"
+	"beneburg/pkg/middleware"
 	"beneburg/pkg/telegram"
 	"context"
 	"fmt"
@@ -81,6 +82,8 @@ func run(logger *zap.Logger) error {
 	router := gin.Default()
 	router.Use(cors.Default())
 	apiGroup := router.Group("/api")
+	tokenAuthMiddleware := middleware.NewTokenAuth(db, logger.Named("TokenAuthMiddleware"))
+	apiGroup.Use(tokenAuthMiddleware.Auth)
 	{
 		usersAPI := api.NewUsersAPI(ctx, db, logger.Named("api/users"))
 		usersAPI.RegisterRoutes(apiGroup)

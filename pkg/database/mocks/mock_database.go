@@ -129,6 +129,21 @@ func (mr *MockDatabaseMockRecorder) GetUserByTelegramID(ctx, telegramID interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByTelegramID", reflect.TypeOf((*MockDatabase)(nil).GetUserByTelegramID), ctx, telegramID)
 }
 
+// GetUserIDByToken mocks base method.
+func (m *MockDatabase) GetUserIDByToken(ctx context.Context, token string) (uint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserIDByToken", ctx, token)
+	ret0, _ := ret[0].(uint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserIDByToken indicates an expected call of GetUserIDByToken.
+func (mr *MockDatabaseMockRecorder) GetUserIDByToken(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserIDByToken", reflect.TypeOf((*MockDatabase)(nil).GetUserIDByToken), ctx, token)
+}
+
 // UpdateUserByID mocks base method.
 func (m *MockDatabase) UpdateUserByID(ctx context.Context, id uint, user *model.User) (*gen.ResultInfo, error) {
 	m.ctrl.T.Helper()

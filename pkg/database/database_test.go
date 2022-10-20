@@ -86,46 +86,17 @@ func Test_database_AutoMigrate(t *testing.T) {
 		})
 		assert.NoError(t, err)
 	})
-	//t.Run("UpdateUserByID", func(t *testing.T) {
-	//	mock.ExpectBegin()
-	//	mock.ExpectExec(regexp.QuoteMeta("UPDATE `users` SET `updated_at`=?,`deleted_at`=?,`telegram_id`=?,`username`=?,`name`=?,`age`=?,`sex`=?,`about`=?,`hobbies`=?,`work`=?,`education`=?,`cover_letter`=?,`contacts`=?,`is_bot`=?,`is_active`=? WHERE `id` = ?")).
-	//		WithArgs(
-	//			sqlmock.AnyArg(),
-	//			sqlmock.AnyArg(),
-	//			10,
-	//			"test",
-	//			"test",
-	//			10,
-	//			"test",
-	//			"test",
-	//			"test",
-	//			"test",
-	//			"test",
-	//			"test",
-	//			"test",
-	//			false,
-	//			true,
-	//			10,
-	//		).WillReturnResult(sqlmock.NewResult(10, 1))
-	//	mock.ExpectCommit()
-	//	resultInfo, err := db.UpdateUserByID(10, &model.User{
-	//		TelegramID:  10,
-	//		Username:    getAddress("test"),
-	//		Name:        "test",
-	//		Age:         getAddress(int32(10)),
-	//		Sex:         getAddress("test"),
-	//		About:       getAddress("test"),
-	//		Hobbies:     getAddress("test"),
-	//		Work:        getAddress("test"),
-	//		Education:   getAddress("test"),
-	//		CoverLetter: getAddress("test"),
-	//		Contacts:    getAddress("test"),
-	//		IsBot:       false,
-	//		IsActive:    true,
-	//	})
-	//	assert.NoError(t, err)
-	//	assert.Equal(t, int64(1), resultInfo.RowsAffected)
-	//})
+	t.Run("GetUserIDByToken", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT `users`.`id` FROM `users` INNER JOIN `tokens` ON `users`.`telegram_id` = `tokens`.`user_telegram_id` WHERE `tokens`.`uuid` = ? AND `tokens`.`expire_at` > ? AND `users`.`deleted_at` IS NULL LIMIT 1")).WithArgs("test", sqlmock.AnyArg()).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
+		out, err := db.GetUserIDByToken(ctx, "test")
+		assert.Equal(t, uint(10), out)
+		assert.NoError(t, err)
+	})
+	t.Run("GetUserIDByToken2", func(t *testing.T) {
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT `users`.`id` FROM `users` INNER JOIN `tokens` ON `users`.`telegram_id` = `tokens`.`user_telegram_id` WHERE `tokens`.`uuid` = ? AND `tokens`.`expire_at` > ? AND `users`.`deleted_at` IS NULL LIMIT 1")).WithArgs("test", sqlmock.AnyArg()).WillReturnRows(sqlmock.NewRows([]string{}))
+		_, err := db.GetUserIDByToken(ctx, "test")
+		assert.Error(t, err)
+	})
 }
 
 func getAddress[T any](s T) *T {
