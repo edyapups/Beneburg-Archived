@@ -40,3 +40,17 @@ func (u *User) RuSex() string {
 		return "не указан"
 	}
 }
+
+const (
+	UserTelegramIDDescription  = "Telegram ID"
+	UserUsernameDescription    = "Username"
+	UserNameDescription        = "Имя"
+	UserAgeDescription         = "Возраст"
+	UserSexDescription         = "Пол"
+	UserAboutDescription       = "О себе"
+	UserHobbiesDescription     = "Хобби"
+	UserWorkDescription        = "Работа"
+	UserEducationDescription   = "Образование"
+	UserCoverLetterDescription = "Почему хочет к нам?"
+	UserContactsDescription    = "Контакты"
+)
