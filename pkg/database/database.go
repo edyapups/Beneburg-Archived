@@ -8,6 +8,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gen"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
@@ -15,6 +16,7 @@ import (
 type Database interface {
 	AutoMigrate(models ...interface{}) error
 	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
+	UpdateOrCreateUser(ctx context.Context, user *model.User) (*model.User, error)
 
 	// CreateToken creates a new token for the given telegramID and returns token's uuid.
 	CreateToken(ctx context.Context, telegramID int64) (*model.Token, error)
@@ -35,6 +37,19 @@ type database struct {
 }
 
 var _ Database = database{}
+
+func (d database) UpdateOrCreateUser(ctx context.Context, user *model.User) (*model.User, error) {
+	q := query.Use(d.db)
+	u := q.User
+	err := u.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "telegram_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"username"}),
+	}).Create(user)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
 
 func (d database) GetUserIDByToken(ctx context.Context, token string) (uint, error) {
 	q := query.Use(d.db)

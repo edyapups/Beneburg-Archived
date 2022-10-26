@@ -17,7 +17,7 @@ func Test_templator_InfoCommandReply(t1 *testing.T) {
 		Username:    getAddress("username"),
 		Name:        "Name",
 		Age:         getAddress(int32(10)),
-		Sex:         getAddress("sex"),
+		Sex:         "sex",
 		About:       getAddress("about"),
 		Hobbies:     getAddress("hobbies"),
 		Education:   getAddress("education"),

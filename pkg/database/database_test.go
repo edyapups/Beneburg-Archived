@@ -2,6 +2,7 @@ package database
 
 import (
 	"beneburg/pkg/database/model"
+	"beneburg/pkg/utils"
 	"context"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
@@ -71,16 +72,16 @@ func Test_database_AutoMigrate(t *testing.T) {
 
 		_, err := db.CreateUser(ctx, &model.User{
 			TelegramID:  10,
-			Username:    getAddress("test"),
+			Username:    utils.GetAddress("test"),
 			Name:        "test",
-			Age:         getAddress(int32(10)),
+			Age:         utils.GetAddress(int32(10)),
 			Sex:         "test",
-			About:       getAddress("test"),
-			Hobbies:     getAddress("test"),
-			Work:        getAddress("test"),
-			Education:   getAddress("test"),
-			CoverLetter: getAddress("test"),
-			Contacts:    getAddress("test"),
+			About:       utils.GetAddress("test"),
+			Hobbies:     utils.GetAddress("test"),
+			Work:        utils.GetAddress("test"),
+			Education:   utils.GetAddress("test"),
+			CoverLetter: utils.GetAddress("test"),
+			Contacts:    utils.GetAddress("test"),
 			IsBot:       false,
 			IsActive:    true,
 		})
@@ -97,8 +98,34 @@ func Test_database_AutoMigrate(t *testing.T) {
 		_, err := db.GetUserIDByToken(ctx, "test")
 		assert.Error(t, err)
 	})
-}
-
-func getAddress[T any](s T) *T {
-	return &s
+	t.Run("UpdateOrCreateUser", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `users` (`created_at`,`updated_at`,`deleted_at`,`telegram_id`,`username`,`name`,`age`,`sex`,`about`,`hobbies`,`work`,`education`,`cover_letter`,`contacts`,`is_bot`,`is_active`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `username`=VALUES(`username`)")).
+			WithArgs(
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+				10,
+				"test",
+				"",
+				nil,
+				"undefined",
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+				false,
+				true,
+			).WillReturnResult(sqlmock.NewResult(10, 1))
+		mock.ExpectCommit()
+		out, err := db.UpdateOrCreateUser(ctx, &model.User{
+			TelegramID: 10,
+			Username:   utils.GetAddress("test"),
+			IsActive:   true,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, int64(10), out.TelegramID)
+	})
 }
