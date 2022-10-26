@@ -144,6 +144,21 @@ func (mr *MockDatabaseMockRecorder) GetUserIDByToken(ctx, token interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserIDByToken", reflect.TypeOf((*MockDatabase)(nil).GetUserIDByToken), ctx, token)
 }
 
+// UpdateOrCreateUser mocks base method.
+func (m *MockDatabase) UpdateOrCreateUser(ctx context.Context, user *model.User) (*model.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrCreateUser", ctx, user)
+	ret0, _ := ret[0].(*model.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateOrCreateUser indicates an expected call of UpdateOrCreateUser.
+func (mr *MockDatabaseMockRecorder) UpdateOrCreateUser(ctx, user interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrCreateUser", reflect.TypeOf((*MockDatabase)(nil).UpdateOrCreateUser), ctx, user)
+}
+
 // UpdateUserByID mocks base method.
 func (m *MockDatabase) UpdateUserByID(ctx context.Context, id uint, user *model.User) (*gen.ResultInfo, error) {
 	m.ctrl.T.Helper()
