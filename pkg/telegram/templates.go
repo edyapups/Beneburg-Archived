@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"beneburg/pkg/database/model"
+	"beneburg/pkg/utils"
 	"fmt"
 	"strings"
 )
@@ -24,9 +25,19 @@ type Templator interface {
 	InfoCommandNoReply() string
 	InfoCommandNoUser() string
 	InfoCommandReply(user *model.User) string
+	LoginCommandReply(token *model.Token) string
 }
 
+var _ Templator = templator{}
+
 type templator struct {
+}
+
+func (t templator) LoginCommandReply(token *model.Token) string {
+	stringBuilder := strings.Builder{}
+	stringBuilder.WriteString("Вот ваша ссылка для входа:\n")
+	stringBuilder.WriteString(utils.URLFromToken(token.UUID))
+	return stringBuilder.String()
 }
 
 func (t templator) InfoCommandNoUser() string {

@@ -127,7 +127,11 @@ func (b *Bot) processPing(message *tgbotapi.Message) {
 }
 
 func (b *Bot) processPrivateCommand(message *tgbotapi.Message) {
-	b.logger.Named("processPrivateCommand").Warn("Not implemented")
+	b.logger.Named("processPrivateCommand").Debug("Processing private command", zap.Any("message", message))
+	if message.Command() == "login" {
+		b.processLoginCommand(message)
+		return
+	}
 }
 
 func (b *Bot) processInfoCommand(message *tgbotapi.Message) {
@@ -187,5 +191,25 @@ func (b *Bot) processMessage(message *tgbotapi.Message) {
 
 	if message.Chat != nil && (message.Chat.Type == "group" || message.Chat.Type == "supergroup") {
 		b.processGroupMessage(message)
+	}
+}
+
+func (b *Bot) processLoginCommand(message *tgbotapi.Message) {
+	b.logger.Named("processLoginCommand").Debug("Processing login command", zap.Any("message", message))
+	if message.From == nil {
+		b.logger.Named("processLoginCommand").Error("Message's From is nil")
+		return
+	}
+	token, err := b.db.CreateToken(b.ctx, message.From.ID)
+	if err != nil {
+		b.logger.Named("processLoginCommand").Error("Error while creating token", zap.Error(err))
+		return
+	}
+	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.LoginCommandReply(token))
+	msg.ParseMode = tgbotapi.ModeHTML
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		b.logger.Named("processLoginCommand").Error("Error while sending message", zap.Error(err))
+		return
 	}
 }
