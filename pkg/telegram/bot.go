@@ -2,9 +2,12 @@ package telegram
 
 import (
 	"beneburg/pkg/database"
+	"beneburg/pkg/database/model"
+	"beneburg/pkg/utils"
 	"context"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
+	"strings"
 	"time"
 )
 
@@ -75,26 +78,15 @@ func (b *Bot) startProcessingUpdates() {
 }
 
 func (b *Bot) processUpdate(update tgbotapi.Update) {
-	b.logger.Named("processUpdate").Debug("Processing update", zap.Any("update", update))
-	if update.Message != nil && update.Message.Chat != nil && update.Message.Chat.Type == "private" {
-		b.logger.Debug("New private message",
-			zap.String("user", update.Message.From.String()),
-			zap.String("text", update.Message.Text),
-		)
-		b.processPrivateMessage(update.Message)
-	}
-
-	if update.Message != nil && update.Message.Chat != nil && (update.Message.Chat.Type == "group" || update.Message.Chat.Type == "supergroup") {
-		b.logger.Debug("New group message",
-			zap.String("user", update.Message.From.String()),
-			zap.String("chat", update.Message.Chat.Title),
-			zap.String("text", update.Message.Text),
-		)
-		b.processGroupMessage(update.Message)
+	b.logger.Named("processUpdate").Info("Processing update", zap.Int("update_id", update.UpdateID))
+	b.logger.Named("processUpdate").Debug("Update", zap.Any("update", update))
+	if update.Message == nil {
+		b.processMessage(update.Message)
 	}
 }
 
 func (b *Bot) processPrivateMessage(message *tgbotapi.Message) {
+	b.logger.Named("processPrivateMessage").Debug("Processing private message", zap.Any("message", message))
 	if message.IsCommand() {
 		b.processPrivateCommand(message)
 		return
@@ -126,6 +118,7 @@ func (b *Bot) processGroupCommand(message *tgbotapi.Message) {
 }
 
 func (b *Bot) processPing(message *tgbotapi.Message) {
+	b.logger.Named("processPing").Debug("Processing ping", zap.Any("message", message))
 	_, err := b.bot.Send(tgbotapi.NewMessage(message.Chat.ID, "pong"))
 	if err != nil {
 		b.logger.Named("processPing").Error("Error while sending message", zap.Error(err))
@@ -165,5 +158,34 @@ func (b *Bot) processInfoCommand(message *tgbotapi.Message) {
 	if err != nil {
 		b.logger.Named("processInfoCommand").Error("Error while sending message", zap.Error(err))
 		return
+	}
+}
+
+func (b *Bot) processMessage(message *tgbotapi.Message) {
+	if from := message.From; from != nil && !from.IsBot {
+		user := model.User{
+			TelegramID: from.ID,
+			Username: func() *string {
+				if from.UserName != "" {
+					return utils.GetAddress(from.UserName)
+				} else {
+					return nil
+				}
+			}(),
+			Name:     strings.TrimSpace(from.FirstName + " " + from.LastName),
+			IsActive: true,
+		}
+		_, err := b.db.UpdateOrCreateUser(b.ctx, &user)
+		if err != nil {
+			b.logger.Named("processMessage").Error("Error while updating user", zap.Error(err))
+			return
+		}
+	}
+	if message.Chat != nil && message.Chat.Type == "private" {
+		b.processPrivateMessage(message)
+	}
+
+	if message.Chat != nil && (message.Chat.Type == "group" || message.Chat.Type == "supergroup") {
+		b.processGroupMessage(message)
 	}
 }
