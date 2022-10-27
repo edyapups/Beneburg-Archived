@@ -29,30 +29,30 @@ func main() {
 	}
 }
 
+type Config struct {
+	Database struct {
+		User     string
+		Password string
+		Host     string
+		Port     string
+		Name     string
+
+		DataSourceName     string
+		OnlyMakeMigrations bool
+	}
+	Telegram struct {
+		Token string
+	}
+}
+
 func run(logger *zap.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	dbName := os.Getenv("MYSQL_DATABASE")
-	dbUser := os.Getenv("MYSQL_USER")
-	dbPassword := os.Getenv("MYSQL_PASSWORD")
-	dbHost := os.Getenv("MYSQL_HOST")
-	dbPort := os.Getenv("MYSQL_PORT")
-	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
-	botToken := os.Getenv("BOT_TOKEN")
+	config, err := loadConfig()
 
-	//if len(botToken) == 0 {
-	//	return fmt.Errorf("BOT_TOKEN must be specified")
-	//}
-	if dbHost == "" {
-		dbHost = "localhost"
-	}
-	if dbPort == "" {
-		dbPort = "3306"
-	}
-
-	dataSourceName := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
-	db, err := database.NewDatabase(dataSourceName, logger.Named("database"))
+	// Creating database connection
+	db, err := database.NewDatabase(config.Database.DataSourceName, logger.Named("database"))
 	if err != nil {
 		return err
 	}
@@ -63,14 +63,15 @@ func run(logger *zap.Logger) error {
 		return err
 	}
 
-	if onlyMakeMigrations {
+	// Stop if only migrations are needed
+	if config.Database.OnlyMakeMigrations {
 		logger.Info("Migrations and code generation were made, exiting...")
 		return nil
 	}
 
 	// Configuring bot
-	if botToken != "" {
-		botAPI, err := tgbotapi.NewBotAPI(botToken)
+	if token := config.Telegram.Token; token != "" {
+		botAPI, err := tgbotapi.NewBotAPI(token)
 		if err != nil {
 			return err
 		}
@@ -101,6 +102,8 @@ func run(logger *zap.Logger) error {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	logger.Info("All ready")
+
+	// Waiting for signal
 	select {
 	case err := <-errChan:
 		return err
@@ -116,4 +119,47 @@ func run(logger *zap.Logger) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func loadConfig() (*Config, error) {
+	dbName := os.Getenv("MYSQL_DATABASE")
+	dbUser := os.Getenv("MYSQL_USER")
+	dbPassword := os.Getenv("MYSQL_PASSWORD")
+	dbHost := os.Getenv("MYSQL_HOST")
+	dbPort := os.Getenv("MYSQL_PORT")
+	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
+	botToken := os.Getenv("BOT_TOKEN")
+
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+	if dbPort == "" {
+		dbPort = "3306"
+	}
+
+	dataSourceName := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=true" + "&" + "multiStatements=true"
+	return &Config{
+		Database: struct {
+			User               string
+			Password           string
+			Host               string
+			Port               string
+			Name               string
+			DataSourceName     string
+			OnlyMakeMigrations bool
+		}{
+			User:               dbUser,
+			Password:           dbPassword,
+			Host:               dbHost,
+			Port:               dbPort,
+			Name:               dbName,
+			DataSourceName:     dataSourceName,
+			OnlyMakeMigrations: onlyMakeMigrations,
+		},
+		Telegram: struct {
+			Token string
+		}{
+			Token: botToken,
+		},
+	}, nil
 }
