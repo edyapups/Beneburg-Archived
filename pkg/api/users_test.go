@@ -21,8 +21,8 @@ func Test_usersApi(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 	dbMock := mock_database.NewMockDatabase(controller)
-
 	api := NewUsersAPI(ctx, dbMock, nil)
+
 	t.Run("GetMe", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := gin.New()
@@ -48,6 +48,7 @@ func Test_usersApi(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, assert.ObjectsAreEqualValues(expectedUser, actualUser))
 	})
+
 	t.Run("UpdateMe", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := gin.New()
