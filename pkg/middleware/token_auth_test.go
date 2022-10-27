@@ -19,7 +19,7 @@ func Test_TokenAuth(t *testing.T) {
 		authMiddleware := NewTokenAuth(dbMock, nil)
 		r.Use(authMiddleware.Auth)
 		r.GET("/test", func(ctx *gin.Context) {
-			ctx.String(200, "%v", ctx.GetUint("userID"))
+			ctx.String(200, "%v", ctx.GetUint("currentUserID"))
 		})
 
 		req := httptest.NewRequest("GET", "/test", nil)

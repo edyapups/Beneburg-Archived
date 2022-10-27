@@ -31,13 +31,13 @@ func NewUsersAPI(ctx context.Context, db database.Database, logger *zap.Logger) 
 }
 
 func (u usersApi) RegisterRoutes(router *gin.RouterGroup) {
-	router.GET("/users/:userId", u.GetUser)
+	router.GET("/users/:user_id", u.GetUser)
 	router.GET("/users", u.ListUsers)
 }
 
 func (u usersApi) GetUser(g *gin.Context) {
 	var userId uint64
-	userIdStr := g.Param("userId")
+	userIdStr := g.Param("user_id")
 	userId, err := strconv.ParseUint(userIdStr, 10, 32)
 	if err != nil {
 		g.JSON(400, gin.H{"error": "invalid user id"})

@@ -25,7 +25,7 @@ func (t tokenAuth) Auth(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
 		return
 	}
-	ctx.Set("userID", userID)
+	ctx.Set("currentUserID", userID)
 }
 
 func NewTokenAuth(db database.Database, logger *zap.Logger) TokenAuth {
