@@ -2,6 +2,7 @@ package api
 
 import (
 	"beneburg/pkg/database"
+	"beneburg/pkg/database/model"
 	"context"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -33,6 +34,8 @@ func NewUsersAPI(ctx context.Context, db database.Database, logger *zap.Logger) 
 func (u usersApi) RegisterRoutes(router *gin.RouterGroup) {
 	router.GET("/users/:user_id", u.GetUser)
 	router.GET("/users", u.ListUsers)
+	router.GET("/me", u.GetMe)
+	router.PUT("/me", u.UpdateMe)
 }
 
 func (u usersApi) GetUser(g *gin.Context) {
@@ -58,4 +61,35 @@ func (u usersApi) ListUsers(g *gin.Context) {
 		return
 	}
 	g.JSON(200, users)
+}
+
+func (u usersApi) GetMe(c *gin.Context) {
+	currentUserId := c.GetUint("currentUserID")
+	user, err := u.db.GetUserByID(c, currentUserId)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, user)
+}
+
+func (u usersApi) UpdateMe(c *gin.Context) {
+	var err error
+	currentUserId := c.GetUint("currentUserID")
+	updatedUser := model.User{}
+	err = c.BindJSON(&updatedUser)
+	if err != nil {
+		return
+	}
+	result, err := u.db.UpdateUserByID(c, currentUserId, &updatedUser)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	if result.Error != nil {
+		c.JSON(500, gin.H{"error": result.Error.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message": "user updated"})
 }
