@@ -2,7 +2,11 @@ services:
   db:
     container_name: db
     image: mysql
-    env_file: .env
+    environment:
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
     volumes:
       - db:/var/lib/mysql
     networks:
@@ -16,7 +20,14 @@ services:
       db:
         condition: service_healthy
     container_name: server
-    env_file: .env
+    environment:
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_HOST
+      - MYSQL_PORT
+      - BOT_TOKEN
+      - ONLY_MAKE_MIGRATIONS
     build:
         context: .
         dockerfile: deploy/server/Dockerfile
