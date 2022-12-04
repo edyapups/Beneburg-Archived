@@ -32,6 +32,8 @@ services:
         context: .
         dockerfile: deploy/server/Dockerfile
         no_cache: true
+        args:
+          - ENVIRONMENT
     ports:
       - "${SERVER_PORT}:8080"
     restart: always

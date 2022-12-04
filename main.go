@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/static"
+
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
@@ -81,6 +83,7 @@ func run(logger *zap.Logger) error {
 
 	// Configuring gin
 	router := gin.Default()
+	router.Use(static.Serve("/", static.LocalFile("./frontend/dist", true)))
 	router.Use(cors.Default())
 	apiGroup := router.Group("/api")
 	tokenAuthMiddleware := middleware.NewTokenAuth(db, logger.Named("TokenAuthMiddleware"))
