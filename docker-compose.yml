@@ -11,6 +11,8 @@ services:
       - db:/var/lib/mysql
     networks:
       - backend
+    ports:
+      - 3306:3306
     healthcheck:
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
       timeout: 3s

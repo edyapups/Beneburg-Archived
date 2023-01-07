@@ -98,6 +98,34 @@ func Test_database_AutoMigrate(t *testing.T) {
 		_, err := db.GetUserIDByToken(ctx, "test")
 		assert.Error(t, err)
 	})
+	t.Run("UpdateUserByID - empty", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec(regexp.QuoteMeta("UPDATE `users` SET `created_at`=?, `updated_at`=?,`deleted_at`=?,`telegram_id`=?,`username`=?,`name`=?,`age`=?,`sex`=?,`about`=?,`hobbies`=?,`work`=?,`education`=?,`cover_letter`=?,`contacts`=?,`is_bot`=?,`is_active`=? WHERE `id` = ?")).
+			WithArgs().WillReturnResult(sqlmock.NewResult(10, 1))
+		mock.ExpectCommit()
+		out, err := db.UpdateUserByID(ctx, 10, &model.User{})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, out.RowsAffected)
+	})
+	t.Run("UpdateUserByID - selected", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec(regexp.QuoteMeta("UPDATE `users` SET `updated_at`=?,`username`=? WHERE `users`.`id` = ? AND `users`.`deleted_at` IS NULL")).
+			WithArgs(
+				sqlmock.AnyArg(),
+				"test",
+				10,
+			).WillReturnResult(sqlmock.NewResult(10, 1))
+		mock.ExpectCommit()
+		out, err := db.UpdateUserByID(ctx, 10, &model.User{
+			Username: utils.GetAddress("test"),
+			Name:     "gwegaw",
+			Age:      utils.GetAddress(int32(20)),
+			Sex:      "default",
+			About:    utils.GetAddress("test"),
+		}, "username")
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), out.RowsAffected)
+	})
 	t.Run("UpdateOrCreateUser", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `users` (`created_at`,`updated_at`,`deleted_at`,`telegram_id`,`username`,`name`,`age`,`sex`,`about`,`hobbies`,`work`,`education`,`cover_letter`,`contacts`,`is_bot`,`is_active`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `username`=VALUES(`username`)")).

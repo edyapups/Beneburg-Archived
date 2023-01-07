@@ -4,9 +4,11 @@ import (
 	"beneburg/pkg/database/model"
 	"beneburg/pkg/database/query"
 	"context"
+	"fmt"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gen"
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
@@ -20,11 +22,11 @@ type Database interface {
 
 	// CreateToken creates a new token for the given telegramID and returns token's uuid.
 	CreateToken(ctx context.Context, telegramID int64) (*model.Token, error)
+
 	GetAllUsers(ctx context.Context) ([]*model.User, error)
 	GetUserByID(ctx context.Context, id uint) (*model.User, error)
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.User, error)
-	UpdateUserByID(ctx context.Context, id uint, user *model.User) (*gen.ResultInfo, error)
-	UpdateUserByTelegramID(ctx context.Context, telegramID int64, user *model.User) (*gen.ResultInfo, error)
+	UpdateUserByID(ctx context.Context, id uint, user *model.User, updateFieldNames ...string) (*gen.ResultInfo, error)
 	GetUserIDByToken(ctx context.Context, token string) (uint, error)
 }
 
@@ -121,18 +123,23 @@ func (d database) GetUserByTelegramID(ctx context.Context, telegramID int64) (*m
 	return first, nil
 }
 
-func (d database) UpdateUserByID(ctx context.Context, id uint, user *model.User) (*gen.ResultInfo, error) {
+// UpdateUserByID updates user by id.
+// updateFieldNames is a list of fields to update, if empty all fields will be updated.
+func (d database) UpdateUserByID(ctx context.Context, id uint, user *model.User, updateFieldNames ...string) (*gen.ResultInfo, error) {
 	u := query.Use(d.db).User
-	update, err := u.WithContext(ctx).Update(u.ID.Eq(id), user)
-	if err != nil {
-		return nil, err
+	userDo := u.WithContext(ctx)
+	if len(updateFieldNames) > 0 {
+		updateFields := make([]field.Expr, 0, len(updateFieldNames))
+		for _, name := range updateFieldNames {
+			got, ok := u.GetFieldByName(name)
+			if !ok {
+				return nil, fmt.Errorf("field %s not found", name)
+			}
+			updateFields = append(updateFields, got)
+		}
+		userDo = userDo.Select(updateFields...)
 	}
-
-	return &update, nil
-}
-func (d database) UpdateUserByTelegramID(ctx context.Context, telegramID int64, user *model.User) (*gen.ResultInfo, error) {
-	u := query.Use(d.db).User
-	update, err := u.WithContext(ctx).Update(u.TelegramID.Eq(telegramID), user)
+	update, err := userDo.Where(u.ID.Eq(id)).Updates(user)
 	if err != nil {
 		return nil, err
 	}
