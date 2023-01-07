@@ -28,6 +28,8 @@ services:
       - MYSQL_PORT
       - BOT_TOKEN
       - ONLY_MAKE_MIGRATIONS
+      - NO_AUTH
+      - ENVIRONMENT
     build:
         context: .
         dockerfile: deploy/server/Dockerfile

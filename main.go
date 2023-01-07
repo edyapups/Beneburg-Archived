@@ -45,6 +45,7 @@ type Config struct {
 	Telegram struct {
 		Token string
 	}
+	noAuth bool
 }
 
 func run(logger *zap.Logger) error {
@@ -85,13 +86,20 @@ func run(logger *zap.Logger) error {
 	router := gin.Default()
 	router.Use(static.Serve("/", static.LocalFile("./frontend/dist", true)))
 	router.Use(cors.Default())
+
+	// Configuring API
 	apiGroup := router.Group("/api")
-	tokenAuthMiddleware := middleware.NewTokenAuth(db, logger.Named("TokenAuthMiddleware"))
-	apiGroup.Use(tokenAuthMiddleware.Auth)
-	{
-		usersAPI := api.NewUsersAPI(ctx, db, logger.Named("api/users"))
-		usersAPI.RegisterRoutes(apiGroup)
+	var tokenAuthMiddleware middleware.TokenAuth
+	if config.noAuth {
+		tokenAuthMiddleware = middleware.NewDevTokenAuth()
+	} else {
+		tokenAuthMiddleware = middleware.NewTokenAuth(db, logger.Named("TokenAuthMiddleware"))
 	}
+	apiGroup.Use(tokenAuthMiddleware.Auth)
+
+	// User API
+	usersAPI := api.NewUsersAPI(ctx, db, logger.Named("api/users"))
+	usersAPI.RegisterRoutes(apiGroup)
 
 	// Starting server
 	logger.Info("Starting server...")
@@ -132,6 +140,7 @@ func loadConfig() (*Config, error) {
 	dbPort := os.Getenv("MYSQL_PORT")
 	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
 	botToken := os.Getenv("BOT_TOKEN")
+	noAuth := os.Getenv("NO_AUTH") == "true"
 
 	if dbHost == "" {
 		dbHost = "localhost"
@@ -164,5 +173,6 @@ func loadConfig() (*Config, error) {
 		}{
 			Token: botToken,
 		},
+		noAuth: noAuth,
 	}, nil
 }

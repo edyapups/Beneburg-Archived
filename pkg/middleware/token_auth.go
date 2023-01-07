@@ -34,3 +34,15 @@ func NewTokenAuth(db database.Database, logger *zap.Logger) TokenAuth {
 		logger: logger,
 	}
 }
+
+// devTokenAuth is a TokenAuth implementation that always returns the same user id.
+type devTokenAuth struct {
+}
+
+func (t devTokenAuth) Auth(ctx *gin.Context) {
+	ctx.Set("currentUserID", 1)
+}
+
+func NewDevTokenAuth() TokenAuth {
+	return &devTokenAuth{}
+}
