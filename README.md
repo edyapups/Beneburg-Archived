@@ -18,6 +18,9 @@ $ echo MYSQL_PASSWORD=your_db_password >> .env.local
 $ echo MYSQL_HOST=db >> .env.local
 $ echo BOT_TOKEN=your_bot_token >> .env.local
 $ echo SERVER_PORT=your_server_port >> .env.local
+```
 
+## Run
+```bash
 $ docker-compose --env-file .env.local -f docker-compose.yml up
 ```
