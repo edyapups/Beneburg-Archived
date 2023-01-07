@@ -1,5 +1,6 @@
 <script>
     import Router from 'svelte-spa-router';
+    import {wrap} from 'svelte-spa-router/wrap'
     import Home from "./routers/Home.svelte";
     import NotFound from "./routers/NotFound.svelte";
     import {location} from 'svelte-spa-router'
@@ -7,6 +8,9 @@
 
     const routes = {
         '/': Home,
+        '/login/:token?': wrap({
+            asyncComponent: () => import('./routers/Login.svelte'),
+        }),
         '*': NotFound,
     }
 </script>

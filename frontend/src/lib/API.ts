@@ -1,8 +1,6 @@
-const schema: string = import.meta.env.VITE_SCHEMA ? import.meta.env.VITE_SCHEMA : 'http';
-const host: string = import.meta.env.VITE_HOST ? import.meta.env.VITE_HOST : 'localhost:8080';
-const url: string = `${schema}://${host}/api`;
+import {getToken} from "./Token";
 
-export interface User {
+export declare interface User {
     ID: string,
     CreatedAt: string,
     UpdatedAt: string,
@@ -23,20 +21,38 @@ export interface User {
 }
 
 export async function getUsers(): Promise<User[]> {
-    const response = await fetch(url + '/users')
+    const response = await fetch('/users', {
+        headers: {
+            'Authorization': `Bearer ${getToken()}`,
+        }
+    })
     return await response.json();
 }
 
 export async function getUser(id: string): Promise<User> {
-    const response = await fetch(url + '/users/' + id)
+    const response = await fetch('/users/' + id, {
+        headers: {
+            'Authorization': `Bearer ${getToken()}`,
+        }
+    })
+    return await response.json();
+}
+
+export async function getMe(): Promise<User> {
+    const response = await fetch('/getMe', {
+        headers: {
+            'Authorization': `Bearer ${getToken()}`,
+        }
+    })
     return await response.json();
 }
 
 export async function createUser(user: User): Promise<User> {
-    const response = await fetch(url + '/users', {
+    const response = await fetch('/users', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`,
         },
         body: JSON.stringify(user)
     })
@@ -44,10 +60,11 @@ export async function createUser(user: User): Promise<User> {
 }
 
 export async function updateUser(user: User): Promise<User> {
-    const response = await fetch(url + '/users/' + user.ID, {
+    const response = await fetch('/users/' + user.ID, {
         method: 'PUT',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getToken()}`,
         },
         body: JSON.stringify(user)
     })
