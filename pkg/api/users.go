@@ -11,8 +11,6 @@ import (
 
 type UsersAPI interface {
 	RegisterRoutes(router *gin.RouterGroup)
-	GetUser(*gin.Context)
-	ListUsers(*gin.Context)
 }
 
 var _ UsersAPI = &usersApi{}
@@ -32,13 +30,13 @@ func NewUsersAPI(ctx context.Context, db database.Database, logger *zap.Logger) 
 }
 
 func (u usersApi) RegisterRoutes(router *gin.RouterGroup) {
-	router.GET("/users/:user_id", u.GetUser)
-	router.GET("/users", u.ListUsers)
-	router.GET("/me", u.GetMe)
-	router.PUT("/me", u.UpdateMe)
+	router.GET("/users/:user_id", u.getUser)
+	router.GET("/users", u.listUsers)
+	router.GET("/me", u.getMe)
+	router.PUT("/me", u.updateMe)
 }
 
-func (u usersApi) GetUser(g *gin.Context) {
+func (u usersApi) getUser(g *gin.Context) {
 	var userId uint64
 	userIdStr := g.Param("user_id")
 	userId, err := strconv.ParseUint(userIdStr, 10, 32)
@@ -54,7 +52,7 @@ func (u usersApi) GetUser(g *gin.Context) {
 	g.JSON(200, user)
 }
 
-func (u usersApi) ListUsers(g *gin.Context) {
+func (u usersApi) listUsers(g *gin.Context) {
 	users, err := u.db.GetAllUsers(u.ctx)
 	if err != nil {
 		g.JSON(500, gin.H{"error": err.Error()})
@@ -63,7 +61,7 @@ func (u usersApi) ListUsers(g *gin.Context) {
 	g.JSON(200, users)
 }
 
-func (u usersApi) GetMe(c *gin.Context) {
+func (u usersApi) getMe(c *gin.Context) {
 	currentUserId := c.GetUint("currentUserID")
 	user, err := u.db.GetUserByID(c, currentUserId)
 	if err != nil {
@@ -73,14 +71,32 @@ func (u usersApi) GetMe(c *gin.Context) {
 	c.JSON(200, user)
 }
 
-func (u usersApi) UpdateMe(c *gin.Context) {
+func (u usersApi) updateMe(c *gin.Context) {
 	var err error
-	currentUserId := c.GetUint("currentUserID")
+	currentUserIdString, ok := c.Get("currentUserID")
+	if !ok {
+		c.JSON(401, gin.H{"error": "unauthorized"})
+		return
+	}
+	currentUserId := currentUserIdString.(uint)
 	updatedUser := model.User{}
 	err = c.BindJSON(&updatedUser)
 	if err != nil {
 		return
 	}
+
+	updatedUser = model.User{
+		Name:        updatedUser.Name,
+		Age:         updatedUser.Age,
+		Sex:         updatedUser.Sex,
+		About:       updatedUser.About,
+		Hobbies:     updatedUser.Hobbies,
+		Work:        updatedUser.Work,
+		Education:   updatedUser.Education,
+		CoverLetter: updatedUser.CoverLetter,
+		Contacts:    updatedUser.Contacts,
+	}
+
 	result, err := u.db.UpdateUserByID(c, currentUserId, &updatedUser)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
@@ -91,5 +107,5 @@ func (u usersApi) UpdateMe(c *gin.Context) {
 		c.JSON(500, gin.H{"error": result.Error.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"message": "user updated"})
+	c.JSON(200, updatedUser)
 }

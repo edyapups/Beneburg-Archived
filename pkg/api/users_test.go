@@ -49,7 +49,7 @@ func Test_usersApi(t *testing.T) {
 		assert.True(t, assert.ObjectsAreEqualValues(expectedUser, actualUser))
 	})
 
-	t.Run("UpdateMe", func(t *testing.T) {
+	t.Run("updateMe", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := gin.New()
 		r.Use(middleware.NewTokenAuth(dbMock, nil).Auth)
