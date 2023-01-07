@@ -36,7 +36,7 @@ FROM gcr.io/distroless/base-debian10
 
 WORKDIR /
 
-COPY --from=frontend-build /app/dist /static
+COPY --from=frontend-build /app/dist ./frontend/dist
 COPY --from=build /main /main
 
 EXPOSE 443
