@@ -15,7 +15,6 @@ import (
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -110,7 +109,8 @@ func run(logger *zap.Logger) error {
 	logger.Info("Server started")
 
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	signal.Notify(sigs, os.Interrupt)
 
 	logger.Info("All ready")
 
