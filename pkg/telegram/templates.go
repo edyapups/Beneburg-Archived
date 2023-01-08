@@ -4,6 +4,7 @@ import (
 	"beneburg/pkg/database/model"
 	"beneburg/pkg/utils"
 	"fmt"
+	"html"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ type templator struct {
 func (t templator) LoginCommandReply(token *model.Token) string {
 	stringBuilder := strings.Builder{}
 	stringBuilder.WriteString("Вот ваша ссылка для входа:\n")
-	stringBuilder.WriteString(utils.URLFromToken(token.UUID))
+	stringBuilder.WriteString(html.EscapeString(utils.URLFromToken(token.UUID)))
 	return stringBuilder.String()
 }
 
