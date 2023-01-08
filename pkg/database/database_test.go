@@ -102,7 +102,7 @@ func Test_database_AutoMigrate(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("GetUserIDByToken", func(t *testing.T) {
-		mock.ExpectQuery(regexp.QuoteMeta("SELECT `users`.`id` FROM `users` INNER JOIN `tokens` ON `users`.`telegram_id` = `tokens`.`user_telegram_id` WHERE `tokens`.`uuid` = ? AND `tokens`.`expire_at` > ? AND `users`.`deleted_at` IS NULL LIMIT 1")).WithArgs("test", sqlmock.AnyArg()).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT `users`.`id` FROM `users` INNER JOIN `tokens` ON `users`.`telegram_id` = `tokens`.`user_telegram_id` WHERE `tokens`.`uuid` = ? AND `tokens`.`expire_at` > NOW() AND `users`.`deleted_at` IS NULL LIMIT 1")).WithArgs("test").WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(10))
 		out, err := db.GetUserIDByToken(ctx, "test")
 		assert.Equal(t, uint(10), out)
 		assert.NoError(t, err)

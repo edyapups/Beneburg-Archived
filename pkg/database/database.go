@@ -58,7 +58,7 @@ func (d database) GetUserIDByToken(ctx context.Context, token string) (uint, err
 	q := query.Use(d.db)
 	t := q.Token
 	u := q.User
-	userId, err := u.WithContext(ctx).Select(u.ID).Join(t, u.TelegramID.EqCol(t.UserTelegramId)).Where(t.UUID.Eq(token)).Where(t.ExpireAt.Gt(time.Now())).Take()
+	userId, err := u.WithContext(ctx).Select(u.ID).Join(t, u.TelegramID.EqCol(t.UserTelegramId)).Where(t.UUID.Eq(token)).Where(t.ExpireAt.GtCol(t.ExpireAt.Now())).Take()
 	if err != nil {
 		return 0, err
 	}
