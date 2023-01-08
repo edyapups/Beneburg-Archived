@@ -9,9 +9,7 @@ export default defineConfig((env: ConfigEnv) => {
     if (env.command === 'serve') {
         config.server = {
             proxy: {
-                '/api': {
-                    target: 'http://localhost:8080',
-                }
+                '/api': 'http://127.0.0.1:8080',
             }
         }
     }
