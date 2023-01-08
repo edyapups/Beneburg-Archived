@@ -5,6 +5,7 @@ import (
 	"beneburg/pkg/database/query"
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gen"
@@ -65,16 +66,30 @@ func (d database) GetUserIDByToken(ctx context.Context, token string) (uint, err
 }
 
 func (d database) CreateToken(ctx context.Context, telegramID int64) (*model.Token, error) {
-	t := query.Use(d.db).Token
-	token := model.Token{
-		UserTelegramId: telegramID,
-		ExpireAt:       time.Now().Add(time.Hour * 24),
-	}
-	err := t.WithContext(ctx).Create(&token)
+	var token *model.Token
+	q := query.Use(d.db)
+	t := q.Token
+
+	err := q.Transaction(func(tx *query.Query) error {
+		uid := uuid.New().String()
+		err := tx.Token.WithContext(ctx).Create(&model.Token{
+			UUID:           uid,
+			UserTelegramId: telegramID,
+			ExpireAt:       time.Now().Add(time.Hour * 24),
+		})
+		if err != nil {
+			return err
+		}
+		token, err = tx.Token.WithContext(ctx).Where(t.UUID.Eq(uid)).First()
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	return &token, nil
+	return token, nil
 }
 
 func (d database) AutoMigrate(models ...interface{}) error {

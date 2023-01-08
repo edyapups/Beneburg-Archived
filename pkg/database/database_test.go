@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 	"regexp"
 	"testing"
+	"time"
 )
 
 func Test_database_AutoMigrate(t *testing.T) {
@@ -46,7 +47,20 @@ func Test_database_AutoMigrate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, uint(10), user.ID)
 	})
-
+	t.Run("CreateToken", func(t *testing.T) {
+		mock.ExpectBegin()
+		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `tokens` (`user_telegram_id`,`expire_at`,`uuid`) VALUES (?,?,?)")).WithArgs(
+			10,
+			sqlmock.AnyArg(),
+			sqlmock.AnyArg(),
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `tokens` WHERE `tokens`.`uuid` = ? ORDER BY `tokens`.`uuid` LIMIT 1")).WithArgs().WillReturnRows(sqlmock.NewRows([]string{"uuid", "user_telegram_id", "expire_at"}).AddRow("test", "10", time.Now()))
+		mock.ExpectCommit()
+		token, err := db.CreateToken(ctx, 10)
+		assert.NoError(t, err)
+		assert.Equal(t, token.UserTelegramId, int64(10))
+		assert.Equal(t, token.UUID, "test")
+	})
 	t.Run("CreateUser", func(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `users` (`created_at`,`updated_at`,`deleted_at`,`telegram_id`,`username`,`name`,`age`,`sex`,`about`,`hobbies`,`work`,`education`,`cover_letter`,`contacts`,`is_bot`,`is_active`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")).
