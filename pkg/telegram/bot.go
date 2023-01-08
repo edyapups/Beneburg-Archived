@@ -80,7 +80,7 @@ func (b *Bot) startProcessingUpdates() {
 func (b *Bot) processUpdate(update tgbotapi.Update) {
 	b.logger.Named("processUpdate").Info("Processing update", zap.Int("update_id", update.UpdateID))
 	b.logger.Named("processUpdate").Debug("Update", zap.Any("update", update))
-	if update.Message == nil {
+	if update.Message != nil {
 		b.processMessage(update.Message)
 	}
 }
