@@ -114,12 +114,26 @@ func Test_database_AutoMigrate(t *testing.T) {
 	})
 	t.Run("UpdateUserByID - empty", func(t *testing.T) {
 		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta("UPDATE `users` SET `created_at`=?, `updated_at`=?,`deleted_at`=?,`telegram_id`=?,`username`=?,`name`=?,`age`=?,`sex`=?,`about`=?,`hobbies`=?,`work`=?,`education`=?,`cover_letter`=?,`contacts`=?,`is_bot`=?,`is_active`=? WHERE `id` = ?")).
-			WithArgs().WillReturnResult(sqlmock.NewResult(10, 1))
+		mock.ExpectExec(regexp.QuoteMeta("UPDATE `users` SET `updated_at`=?,`username`=?,`name`=?,`age`=?,`sex`=?,`about`=? WHERE `users`.`id` = ? AND `users`.`deleted_at` IS NULL")).
+			WithArgs(
+				sqlmock.AnyArg(),
+				"test",
+				"test",
+				20,
+				"default",
+				"test",
+				10,
+			).WillReturnResult(sqlmock.NewResult(10, 1))
 		mock.ExpectCommit()
-		out, err := db.UpdateUserByID(ctx, 10, &model.User{})
+		out, err := db.UpdateUserByID(ctx, 10, &model.User{
+			Username: utils.GetAddress("test"),
+			Name:     "test",
+			Age:      utils.GetAddress(int32(20)),
+			Sex:      "default",
+			About:    utils.GetAddress("test"),
+		})
 		assert.NoError(t, err)
-		assert.Equal(t, 1, out.RowsAffected)
+		assert.Equal(t, int64(1), out.RowsAffected)
 	})
 	t.Run("UpdateUserByID - selected", func(t *testing.T) {
 		mock.ExpectBegin()
