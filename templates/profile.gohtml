@@ -1,0 +1,58 @@
+{{ template "header" .}}
+    {{ if not (eq .user.Status "new") }}
+        {{ template "navbar" .}}
+    {{end}}
+<div class="container mt-4">
+    {{ if or (ne .form.Status "new") (.no_forms) }}
+        <form method="post" action="/{{ .page }}/form">
+            <div class="mb-3">
+                <label class="form-label" for="nameField">Имя</label>
+                <input required type="text" class="form-control" name="nameField" id="nameField" placeholder="Имя" {{ with .form.Name }} value="{{.}}" {{end}}>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="ageField">Возраст</label>
+                <input required type="number" class="form-control" name="ageField" id="ageField" placeholder="Возраст" {{ with .form.Age }}value="{{.}}" {{end}}>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="sexField">Гендер</label>
+                <select class="form-select" name="sexField" id="sexField">
+                    <option value="male" {{ if eq .form.Sex "male" }} selected {{end}}>Мужской</option>
+                    <option value="female" {{ if eq .form.Sex "female" }} selected {{end}}>Женский</option>
+                    <option value="nonbinary" {{ if eq .form.Sex "nonbinary" }} selected {{end}}>Небинарный</option>
+                    <option value="undefined" {{ if eq .form.Sex "undefined" }} selected {{end}}>Не указан</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="aboutField">О себе</label>
+                <textarea required class="form-control" name="aboutField" id="aboutField" rows="4">{{with .form.About }}{{.}}{{end}}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="hobbiesField">Увлечения</label>
+                <textarea class="form-control" name="hobbiesField" id="hobbiesField" rows="4">{{with .form.Hobbies}}{{.}}{{end}}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="workField">Работа</label>
+                <textarea class="form-control" name="workField" id="workField" rows="4">{{with .form.Work}}{{.}}{{end}}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="educationField">Образование</label>
+                <textarea class="form-control" name="educationField" id="educationField" rows="4">{{with .form.Education}}{{.}}{{end}}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="coverLetterField">Почему хочешь к нам?</label>
+                <textarea required class="form-control" name="coverLetterField" id="coverLetterField" rows="4">{{with .form.CoverLetter}}{{.}}{{end}}</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="contactsField">Контакты</label>
+                <textarea class="form-control" name="contactsField" id="contactsField" rows="4">{{with .form.Contacts}}{{.}}{{end}}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Отправить</button>
+        </form>
+    {{else}}
+    <div class="alert alert-success" role="alert">
+        <h4 class="alert-heading">Форма отправлена!</h4>
+        <p>Спасибо! Форма отправлена на рассмотрение, после обработки в бота придет сообщение.</p>
+    </div>
+    {{end}}
+</div>
+{{ template "footer" .}}
