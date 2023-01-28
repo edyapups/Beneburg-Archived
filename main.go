@@ -28,23 +28,6 @@ func main() {
 	}
 }
 
-type Config struct {
-	Database struct {
-		User     string
-		Password string
-		Host     string
-		Port     string
-		Name     string
-
-		DataSourceName     string
-		OnlyMakeMigrations bool
-	}
-	Telegram struct {
-		Token string
-	}
-	noAuth bool
-}
-
 func run(logger *zap.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -65,7 +48,7 @@ func run(logger *zap.Logger) error {
 
 	// Stop if only migrations are needed
 	if config.Database.OnlyMakeMigrations {
-		logger.Info("Migrations and code generation were made, exiting...")
+		logger.Info("Migrations were made, exiting...")
 		return nil
 	}
 
@@ -129,6 +112,23 @@ func run(logger *zap.Logger) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+type Config struct {
+	Database struct {
+		User     string
+		Password string
+		Host     string
+		Port     string
+		Name     string
+
+		DataSourceName     string
+		OnlyMakeMigrations bool
+	}
+	Telegram struct {
+		Token string
+	}
+	noAuth bool
 }
 
 func loadConfig() (*Config, error) {
