@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/acme/autocert"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -72,6 +74,12 @@ func run(logger *zap.Logger) error {
 
 	// Configuring gin
 	router := gin.Default()
+	if config.trustedProxy != "" {
+		err := router.SetTrustedProxies([]string{config.trustedProxy})
+		if err != nil {
+			return err
+		}
+	}
 	router.Static("/assets", "./assets")
 	router.LoadHTMLGlob("templates/*")
 	router.Use(cors.Default())
@@ -104,29 +112,58 @@ func run(logger *zap.Logger) error {
 
 	// Starting server
 	logger.Info("Starting server...")
-	errChan := make(chan error)
-	go func() {
-		errChan <- router.Run(":8080")
-	}()
+	if config.domain != "" {
+		logger.Info("Starting HTTPS server...")
+		logger.Info("Domain: " + config.domain)
+		s1 := &http.Server{
+			Addr:    ":http",
+			Handler: http.HandlerFunc(redirect),
+		}
+		s2 := &http.Server{
+			Handler: router,
+		}
+
+		// TODO: add goroutine waitgroup
+		go func() {
+			err := s1.ListenAndServe()
+			if err != nil {
+				logger.Error("ListenAndServe", zap.Error(err))
+			}
+		}()
+		go func() {
+			err := s2.Serve(autocert.NewListener(config.domain))
+			if err != nil {
+				logger.Error("Serve", zap.Error(err))
+			}
+		}()
+	} else {
+		logger.Info("Starting HTTP server...")
+		s1 := &http.Server{
+			Addr:    ":8080",
+			Handler: router,
+		}
+		// TODO: add goroutine waitgroup
+		go func() {
+			err := s1.ListenAndServe()
+			if err != nil {
+				logger.Error("ListenAndServe", zap.Error(err))
+			}
+		}()
+	}
+
 	logger.Info("Server started")
-
-	sigs := make(chan os.Signal, 1)
-
-	signal.Notify(sigs, os.Interrupt)
-
 	logger.Info("All ready")
 
 	// Waiting for signal
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt)
 	select {
-	case err := <-errChan:
-		return err
 	case sig := <-sigs:
 		logger.Info("Received signal", zap.String("signal", sig.String()))
 		cancel()
 		select {
-		case <-ctx.Done():
-			return nil
-		case <-time.After(time.Second * 10):
+		// TODO: wait for all goroutines to finish
+		case <-time.After(time.Second * 4):
 			return fmt.Errorf("timeout while waiting for context to be done")
 		}
 	case <-ctx.Done():
@@ -148,10 +185,22 @@ type Config struct {
 	Telegram struct {
 		Token string
 	}
-	noAuth bool
+	domain       string
+	trustedProxy string
+	noAuth       bool
 }
 
 func loadConfig() (*Config, error) {
+	err := os.Setenv("XDG_CACHE_HOME", "/root/.cache")
+	if err != nil {
+		return nil, err
+	}
+	dir, _ := os.UserHomeDir()
+	fmt.Printf("os.UserHomeDir() = %s\n", dir)
+	home := os.Getenv("HOME")
+	fmt.Printf("os.Getenv(\"HOME\") = %s\n", home)
+
+	// Loading config
 	dbName := os.Getenv("MYSQL_DATABASE")
 	dbUser := os.Getenv("MYSQL_USER")
 	dbPassword := os.Getenv("MYSQL_PASSWORD")
@@ -160,6 +209,8 @@ func loadConfig() (*Config, error) {
 	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
 	botToken := os.Getenv("BOT_TOKEN")
 	noAuth := os.Getenv("NO_AUTH") == "true"
+	domain := os.Getenv("DOMAIN")
+	trustedProxy := os.Getenv("TRUSTED_PROXY")
 
 	if dbHost == "" {
 		dbHost = "localhost"
@@ -192,6 +243,14 @@ func loadConfig() (*Config, error) {
 		}{
 			Token: botToken,
 		},
-		noAuth: noAuth,
+		domain:       domain,
+		trustedProxy: trustedProxy,
+		noAuth:       noAuth,
 	}, nil
+}
+
+func redirect(w http.ResponseWriter, req *http.Request) {
+	target := "https://" + req.Host + req.RequestURI
+
+	http.Redirect(w, req, target, http.StatusMovedPermanently)
 }

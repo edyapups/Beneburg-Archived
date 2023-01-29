@@ -32,14 +32,19 @@ services:
       - ONLY_MAKE_MIGRATIONS
       - NO_AUTH
       - ENVIRONMENT
+      - DOMAIN
+      - TRUSTED_PROXY
     build:
         context: .
         dockerfile: deploy/server/Dockerfile
         no_cache: true
         args:
           - ENVIRONMENT
+    volumes:
+      - letsencrypt:/root/.cache
     ports:
-      - "${SERVER_PORT}:8080"
+      - "8080:${SERVER_PORT:-8080}"
+      - "8443:443"
     restart: always
     networks:
       - backend
@@ -47,6 +52,7 @@ services:
 
 volumes:
     db: {}
+    letsencrypt: {}
 
 networks:
   backend: {}
