@@ -98,21 +98,6 @@ func (mr *MockDatabaseMockRecorder) CreateOrProlongToken(ctx, telegramID interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrProlongToken", reflect.TypeOf((*MockDatabase)(nil).CreateOrProlongToken), ctx, telegramID)
 }
 
-// ReissueToken mocks base method
-func (m *MockDatabase) ReissueToken(ctx context.Context, telegramID int64) (*model.Token, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReissueToken", ctx, telegramID)
-	ret0, _ := ret[0].(*model.Token)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ReissueToken indicates an expected call of ReissueToken
-func (mr *MockDatabaseMockRecorder) ReissueToken(ctx, telegramID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReissueToken", reflect.TypeOf((*MockDatabase)(nil).ReissueToken), ctx, telegramID)
-}
-
 // GetUserByToken mocks base method
 func (m *MockDatabase) GetUserByToken(ctx context.Context, token string) (*model.User, error) {
 	m.ctrl.T.Helper()

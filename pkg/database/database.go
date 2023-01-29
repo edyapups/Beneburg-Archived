@@ -21,7 +21,6 @@ type Database interface {
 
 	// CreateToken creates a new token for the given telegramID and returns token's uuid.
 	CreateOrProlongToken(ctx context.Context, telegramID int64) (*model.Token, error)
-	ReissueToken(ctx context.Context, telegramID int64) (*model.Token, error)
 	GetUserByToken(ctx context.Context, token string) (*model.User, error)
 
 	GetAllUsers(ctx context.Context) ([]*model.User, error)
@@ -92,7 +91,7 @@ func (d database) CreateOrProlongToken(ctx context.Context, telegramID int64) (*
 	err := t.WithContext(ctx).Clauses(
 		clause.OnConflict{
 			Columns:   []clause.Column{{Name: "user_telegram_id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"expire_at"}),
+			DoUpdates: clause.AssignmentColumns([]string{"uuid", "expire_at"}),
 		},
 	).Create(token)
 	if err != nil {
