@@ -11,6 +11,7 @@ func ProfileRedirectMiddleware() gin.HandlerFunc {
 		user := c.MustGet("currentUser").(*model.User)
 		if user.Status == model.UserStatusNew {
 			c.Redirect(http.StatusFound, "/profile")
+			c.Abort()
 			return
 		}
 	}

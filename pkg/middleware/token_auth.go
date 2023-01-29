@@ -22,6 +22,7 @@ func (t tokenAuth) Auth(ctx *gin.Context) {
 		t.logger.Named("Auth").Info("No token provided", zap.Any("headers", ctx.Request.Header))
 		ctx.SetCookie("token", "", -1, "/", "", false, true)
 		ctx.Redirect(http.StatusFound, "/login")
+		ctx.Abort()
 		return
 	}
 
@@ -30,11 +31,13 @@ func (t tokenAuth) Auth(ctx *gin.Context) {
 		t.logger.Named("Auth").Info("Error getting user id by token", zap.Error(err))
 		ctx.SetCookie("token", "", -1, "/", "", false, true)
 		ctx.Redirect(http.StatusFound, "/login")
+		ctx.Abort()
 		return
 	}
 	if user.Status == model.UserStatusBanned {
 		t.logger.Named("Auth").Info("User is banned", zap.Any("user", user))
 		ctx.Redirect(http.StatusFound, "/ban")
+		ctx.Abort()
 		return
 	}
 	ctx.Set("currentUser", user)
