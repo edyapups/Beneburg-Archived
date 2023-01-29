@@ -33,17 +33,7 @@ func newUser(db *gorm.DB) user {
 	_user.DeletedAt = field.NewField(tableName, "deleted_at")
 	_user.TelegramID = field.NewInt64(tableName, "telegram_id")
 	_user.Username = field.NewString(tableName, "username")
-	_user.Name = field.NewString(tableName, "name")
-	_user.Age = field.NewInt32(tableName, "age")
-	_user.Sex = field.NewString(tableName, "sex")
-	_user.About = field.NewString(tableName, "about")
-	_user.Hobbies = field.NewString(tableName, "hobbies")
-	_user.Work = field.NewString(tableName, "work")
-	_user.Education = field.NewString(tableName, "education")
-	_user.CoverLetter = field.NewString(tableName, "cover_letter")
-	_user.Contacts = field.NewString(tableName, "contacts")
-	_user.IsBot = field.NewBool(tableName, "is_bot")
-	_user.IsActive = field.NewBool(tableName, "is_active")
+	_user.Status = field.NewString(tableName, "status")
 
 	_user.fillFieldMap()
 
@@ -53,24 +43,14 @@ func newUser(db *gorm.DB) user {
 type user struct {
 	userDo userDo
 
-	ALL         field.Asterisk
-	ID          field.Uint
-	CreatedAt   field.Time
-	UpdatedAt   field.Time
-	DeletedAt   field.Field
-	TelegramID  field.Int64
-	Username    field.String
-	Name        field.String
-	Age         field.Int32
-	Sex         field.String
-	About       field.String
-	Hobbies     field.String
-	Work        field.String
-	Education   field.String
-	CoverLetter field.String
-	Contacts    field.String
-	IsBot       field.Bool
-	IsActive    field.Bool
+	ALL        field.Asterisk
+	ID         field.Uint
+	CreatedAt  field.Time
+	UpdatedAt  field.Time
+	DeletedAt  field.Field
+	TelegramID field.Int64
+	Username   field.String
+	Status     field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -93,17 +73,7 @@ func (u *user) updateTableName(table string) *user {
 	u.DeletedAt = field.NewField(table, "deleted_at")
 	u.TelegramID = field.NewInt64(table, "telegram_id")
 	u.Username = field.NewString(table, "username")
-	u.Name = field.NewString(table, "name")
-	u.Age = field.NewInt32(table, "age")
-	u.Sex = field.NewString(table, "sex")
-	u.About = field.NewString(table, "about")
-	u.Hobbies = field.NewString(table, "hobbies")
-	u.Work = field.NewString(table, "work")
-	u.Education = field.NewString(table, "education")
-	u.CoverLetter = field.NewString(table, "cover_letter")
-	u.Contacts = field.NewString(table, "contacts")
-	u.IsBot = field.NewBool(table, "is_bot")
-	u.IsActive = field.NewBool(table, "is_active")
+	u.Status = field.NewString(table, "status")
 
 	u.fillFieldMap()
 
@@ -126,24 +96,14 @@ func (u *user) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *user) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 17)
+	u.fieldMap = make(map[string]field.Expr, 7)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["created_at"] = u.CreatedAt
 	u.fieldMap["updated_at"] = u.UpdatedAt
 	u.fieldMap["deleted_at"] = u.DeletedAt
 	u.fieldMap["telegram_id"] = u.TelegramID
 	u.fieldMap["username"] = u.Username
-	u.fieldMap["name"] = u.Name
-	u.fieldMap["age"] = u.Age
-	u.fieldMap["sex"] = u.Sex
-	u.fieldMap["about"] = u.About
-	u.fieldMap["hobbies"] = u.Hobbies
-	u.fieldMap["work"] = u.Work
-	u.fieldMap["education"] = u.Education
-	u.fieldMap["cover_letter"] = u.CoverLetter
-	u.fieldMap["contacts"] = u.Contacts
-	u.fieldMap["is_bot"] = u.IsBot
-	u.fieldMap["is_active"] = u.IsActive
+	u.fieldMap["status"] = u.Status
 }
 
 func (u user) clone(db *gorm.DB) user {

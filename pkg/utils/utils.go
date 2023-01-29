@@ -7,5 +7,5 @@ func GetAddress[T any](s T) *T {
 }
 
 func URLFromToken(token string) string {
-	return fmt.Sprintf("https://beneburg.edyapups.ru/#/login/%s", token)
+	return fmt.Sprintf("https://beneburg.edyapups.ru/login/%s", token)
 }

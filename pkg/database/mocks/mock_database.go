@@ -83,19 +83,49 @@ func (mr *MockDatabaseMockRecorder) UpdateOrCreateUser(ctx, user interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrCreateUser", reflect.TypeOf((*MockDatabase)(nil).UpdateOrCreateUser), ctx, user)
 }
 
-// CreateToken mocks base method
-func (m *MockDatabase) CreateToken(ctx context.Context, telegramID int64) (*model.Token, error) {
+// CreateOrProlongToken mocks base method
+func (m *MockDatabase) CreateOrProlongToken(ctx context.Context, telegramID int64) (*model.Token, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateToken", ctx, telegramID)
+	ret := m.ctrl.Call(m, "CreateOrProlongToken", ctx, telegramID)
 	ret0, _ := ret[0].(*model.Token)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateToken indicates an expected call of CreateToken
-func (mr *MockDatabaseMockRecorder) CreateToken(ctx, telegramID interface{}) *gomock.Call {
+// CreateOrProlongToken indicates an expected call of CreateOrProlongToken
+func (mr *MockDatabaseMockRecorder) CreateOrProlongToken(ctx, telegramID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateToken", reflect.TypeOf((*MockDatabase)(nil).CreateToken), ctx, telegramID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrProlongToken", reflect.TypeOf((*MockDatabase)(nil).CreateOrProlongToken), ctx, telegramID)
+}
+
+// ReissueToken mocks base method
+func (m *MockDatabase) ReissueToken(ctx context.Context, telegramID int64) (*model.Token, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReissueToken", ctx, telegramID)
+	ret0, _ := ret[0].(*model.Token)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReissueToken indicates an expected call of ReissueToken
+func (mr *MockDatabaseMockRecorder) ReissueToken(ctx, telegramID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReissueToken", reflect.TypeOf((*MockDatabase)(nil).ReissueToken), ctx, telegramID)
+}
+
+// GetUserByToken mocks base method
+func (m *MockDatabase) GetUserByToken(ctx context.Context, token string) (*model.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByToken", ctx, token)
+	ret0, _ := ret[0].(*model.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByToken indicates an expected call of GetUserByToken
+func (mr *MockDatabaseMockRecorder) GetUserByToken(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByToken", reflect.TypeOf((*MockDatabase)(nil).GetUserByToken), ctx, token)
 }
 
 // GetAllUsers mocks base method
@@ -144,36 +174,121 @@ func (mr *MockDatabaseMockRecorder) GetUserByTelegramID(ctx, telegramID interfac
 }
 
 // UpdateUserByID mocks base method
-func (m *MockDatabase) UpdateUserByID(ctx context.Context, id uint, user *model.User, updateFieldNames ...string) (*gen.ResultInfo, error) {
+func (m *MockDatabase) UpdateUserByID(ctx context.Context, id uint, user *model.User) (*model.User, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, id, user}
-	for _, a := range updateFieldNames {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "UpdateUserByID", varargs...)
-	ret0, _ := ret[0].(*gen.ResultInfo)
+	ret := m.ctrl.Call(m, "UpdateUserByID", ctx, id, user)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateUserByID indicates an expected call of UpdateUserByID
-func (mr *MockDatabaseMockRecorder) UpdateUserByID(ctx, id, user interface{}, updateFieldNames ...interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) UpdateUserByID(ctx, id, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, id, user}, updateFieldNames...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserByID", reflect.TypeOf((*MockDatabase)(nil).UpdateUserByID), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserByID", reflect.TypeOf((*MockDatabase)(nil).UpdateUserByID), ctx, id, user)
 }
 
-// GetUserIDByToken mocks base method
-func (m *MockDatabase) GetUserIDByToken(ctx context.Context, token string) (uint, error) {
+// CreateForm mocks base method
+func (m *MockDatabase) CreateForm(ctx context.Context, form *model.Form) (*model.Form, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserIDByToken", ctx, token)
-	ret0, _ := ret[0].(uint)
+	ret := m.ctrl.Call(m, "CreateForm", ctx, form)
+	ret0, _ := ret[0].(*model.Form)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUserIDByToken indicates an expected call of GetUserIDByToken
-func (mr *MockDatabaseMockRecorder) GetUserIDByToken(ctx, token interface{}) *gomock.Call {
+// CreateForm indicates an expected call of CreateForm
+func (mr *MockDatabaseMockRecorder) CreateForm(ctx, form interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserIDByToken", reflect.TypeOf((*MockDatabase)(nil).GetUserIDByToken), ctx, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateForm", reflect.TypeOf((*MockDatabase)(nil).CreateForm), ctx, form)
+}
+
+// AcceptForm mocks base method
+func (m *MockDatabase) AcceptForm(ctx context.Context, id uint) (*gen.ResultInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AcceptForm", ctx, id)
+	ret0, _ := ret[0].(*gen.ResultInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AcceptForm indicates an expected call of AcceptForm
+func (mr *MockDatabaseMockRecorder) AcceptForm(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptForm", reflect.TypeOf((*MockDatabase)(nil).AcceptForm), ctx, id)
+}
+
+// RejectForm mocks base method
+func (m *MockDatabase) RejectForm(ctx context.Context, id uint) (*gen.ResultInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RejectForm", ctx, id)
+	ret0, _ := ret[0].(*gen.ResultInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RejectForm indicates an expected call of RejectForm
+func (mr *MockDatabaseMockRecorder) RejectForm(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RejectForm", reflect.TypeOf((*MockDatabase)(nil).RejectForm), ctx, id)
+}
+
+// GetActualForm mocks base method
+func (m *MockDatabase) GetActualForm(ctx context.Context, telegramID int64) (*model.Form, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActualForm", ctx, telegramID)
+	ret0, _ := ret[0].(*model.Form)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetActualForm indicates an expected call of GetActualForm
+func (mr *MockDatabaseMockRecorder) GetActualForm(ctx, telegramID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActualForm", reflect.TypeOf((*MockDatabase)(nil).GetActualForm), ctx, telegramID)
+}
+
+// GetLastForm mocks base method
+func (m *MockDatabase) GetLastForm(ctx context.Context, telegramID int64) (*model.Form, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastForm", ctx, telegramID)
+	ret0, _ := ret[0].(*model.Form)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastForm indicates an expected call of GetLastForm
+func (mr *MockDatabaseMockRecorder) GetLastForm(ctx, telegramID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastForm", reflect.TypeOf((*MockDatabase)(nil).GetLastForm), ctx, telegramID)
+}
+
+// GetAllUserForms mocks base method
+func (m *MockDatabase) GetAllUserForms(ctx context.Context, telegramID int64) ([]*model.Form, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllUserForms", ctx, telegramID)
+	ret0, _ := ret[0].([]*model.Form)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllUserForms indicates an expected call of GetAllUserForms
+func (mr *MockDatabaseMockRecorder) GetAllUserForms(ctx, telegramID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllUserForms", reflect.TypeOf((*MockDatabase)(nil).GetAllUserForms), ctx, telegramID)
+}
+
+// GetAllForms mocks base method
+func (m *MockDatabase) GetAllForms(ctx context.Context) ([]*model.Form, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllForms", ctx)
+	ret0, _ := ret[0].([]*model.Form)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllForms indicates an expected call of GetAllForms
+func (mr *MockDatabaseMockRecorder) GetAllForms(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllForms", reflect.TypeOf((*MockDatabase)(nil).GetAllForms), ctx)
 }

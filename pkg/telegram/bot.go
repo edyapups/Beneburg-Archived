@@ -3,11 +3,9 @@ package telegram
 import (
 	"beneburg/pkg/database"
 	"beneburg/pkg/database/model"
-	"beneburg/pkg/utils"
 	"context"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
-	"strings"
 	"time"
 )
 
@@ -39,6 +37,7 @@ func (b *Bot) Start() {
 	go b.startProcessingUpdates()
 }
 
+// TODO: add With() with context to all loggings
 func (b *Bot) startGettingUpdates() {
 	var offset = 0
 	for {
@@ -49,8 +48,9 @@ func (b *Bot) startGettingUpdates() {
 		}
 		updates, err := b.bot.GetUpdates(tgbotapi.UpdateConfig{
 			Offset:  offset,
-			Timeout: 0,
+			Timeout: 60,
 		})
+		b.logger.Named("startGettingUpdates").Debug("Got updates", zap.Any("updates", updates))
 		if err != nil {
 			b.logger.Error("Error while getting bot updates", zap.Error(err))
 			b.logger.Info("Sleeping for 3 seconds...")
@@ -85,6 +85,35 @@ func (b *Bot) processUpdate(update tgbotapi.Update) {
 	}
 }
 
+func (b *Bot) processMessage(message *tgbotapi.Message) {
+	b.logger.Named("processMessage").Debug("Processing message", zap.Any("message", message))
+	if from := message.From; from != nil && !from.IsBot {
+		user := model.User{
+			TelegramID: from.ID,
+			Username: func() *string {
+				if from.UserName != "" {
+					return &from.UserName
+				} else {
+					return nil
+				}
+			}(),
+		}
+		_, err := b.db.UpdateOrCreateUser(b.ctx, &user)
+		if err != nil {
+			b.logger.Named("processMessage").Error("Error while updating user", zap.Error(err))
+			return
+		}
+	}
+
+	// TODO: use switch
+	if message.Chat != nil && message.Chat.Type == "private" {
+		b.processPrivateMessage(message)
+	}
+
+	if message.Chat != nil && (message.Chat.Type == "group" || message.Chat.Type == "supergroup") {
+		b.processGroupMessage(message)
+	}
+}
 func (b *Bot) processPrivateMessage(message *tgbotapi.Message) {
 	b.logger.Named("processPrivateMessage").Debug("Processing private message", zap.Any("message", message))
 	if message.IsCommand() {
@@ -165,46 +194,18 @@ func (b *Bot) processInfoCommand(message *tgbotapi.Message) {
 	}
 }
 
-func (b *Bot) processMessage(message *tgbotapi.Message) {
-	if from := message.From; from != nil && !from.IsBot {
-		user := model.User{
-			TelegramID: from.ID,
-			Username: func() *string {
-				if from.UserName != "" {
-					return utils.GetAddress(from.UserName)
-				} else {
-					return nil
-				}
-			}(),
-			Name:     strings.TrimSpace(from.FirstName + " " + from.LastName),
-			IsActive: true,
-		}
-		_, err := b.db.UpdateOrCreateUser(b.ctx, &user)
-		if err != nil {
-			b.logger.Named("processMessage").Error("Error while updating user", zap.Error(err))
-			return
-		}
-	}
-	if message.Chat != nil && message.Chat.Type == "private" {
-		b.processPrivateMessage(message)
-	}
-
-	if message.Chat != nil && (message.Chat.Type == "group" || message.Chat.Type == "supergroup") {
-		b.processGroupMessage(message)
-	}
-}
-
 func (b *Bot) processLoginCommand(message *tgbotapi.Message) {
 	b.logger.Named("processLoginCommand").Debug("Processing login command", zap.Any("message", message))
 	if message.From == nil {
 		b.logger.Named("processLoginCommand").Error("Message's From is nil")
 		return
 	}
-	token, err := b.db.CreateToken(b.ctx, message.From.ID)
+	token, err := b.db.CreateOrProlongToken(b.ctx, message.From.ID)
 	if err != nil {
 		b.logger.Named("processLoginCommand").Error("Error while creating token", zap.Error(err))
 		return
 	}
+	b.logger.Named("processLoginCommand").Debug("Token created", zap.Any("token", token))
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.LoginCommandReply(token))
 	msg.ParseMode = tgbotapi.ModeHTML
 	_, err = b.bot.Send(msg)

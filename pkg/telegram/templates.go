@@ -33,48 +33,7 @@ func (t templator) InfoCommandNoUser() string {
 
 func (t templator) InfoCommandReply(user *model.User) string {
 	stringBuilder := strings.Builder{}
-	stringBuilder.WriteString(FieldStringWithBoldKey(model.UserNameDescription, user.Name))
 	AddDelimiter(&stringBuilder)
-
-	if user.Age != nil {
-		stringBuilder.WriteString(FieldStringWithBoldKey(model.UserAgeDescription, *user.Age))
-		AddDelimiter(&stringBuilder)
-	}
-
-	if user.Sex != "undefined" {
-		stringBuilder.WriteString(FieldStringWithBoldKey(model.UserSexDescription, user.RuSex()))
-		AddDelimiter(&stringBuilder)
-	}
-
-	if user.About != nil {
-		stringBuilder.WriteString(FieldStringWithBoldKey(model.UserAboutDescription, *user.About))
-		AddDelimiter(&stringBuilder)
-	}
-
-	if user.Hobbies != nil {
-		stringBuilder.WriteString(FieldStringWithBoldKey(model.UserHobbiesDescription, *user.Hobbies))
-		AddDelimiter(&stringBuilder)
-	}
-
-	if user.Work != nil {
-		stringBuilder.WriteString(FieldStringWithBoldKey(model.UserWorkDescription, *user.Work))
-		AddDelimiter(&stringBuilder)
-	}
-
-	if user.Education != nil {
-		stringBuilder.WriteString(FieldStringWithBoldKey(model.UserEducationDescription, *user.Education))
-		AddDelimiter(&stringBuilder)
-	}
-
-	if user.CoverLetter != nil {
-		stringBuilder.WriteString(FieldStringWithBoldKey(model.UserCoverLetterDescription, *user.CoverLetter))
-		AddDelimiter(&stringBuilder)
-	}
-
-	if user.Contacts != nil {
-		stringBuilder.WriteString(FieldStringWithBoldKey(model.UserContactsDescription, *user.Contacts))
-		AddDelimiter(&stringBuilder)
-	}
 
 	stringBuilder.WriteString(fmt.Sprintf(
 		"<i>ID <a href=\"tg://user?id=%d\">пользователя</a>: </i><code>%d</code>",

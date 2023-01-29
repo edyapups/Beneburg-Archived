@@ -1,10 +1,10 @@
 package main
 
 import (
-	"beneburg/pkg/api"
 	"beneburg/pkg/database"
 	"beneburg/pkg/middleware"
 	"beneburg/pkg/telegram"
+	"beneburg/pkg/views"
 	"context"
 	"fmt"
 	"github.com/gin-contrib/cors"
@@ -40,6 +40,24 @@ func run(logger *zap.Logger) error {
 		return err
 	}
 
+	// Configuring bot
+	if token := config.Telegram.Token; token != "" {
+		botAPI, err := tgbotapi.NewBotAPI(token)
+		if err != nil {
+			return err
+		}
+		bot := telegram.NewBot(ctx, botAPI, db, logger.Named("telegram"))
+		bot.Start()
+
+		// Log panic
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("panic", zap.Any("panic", r))
+				panic(r)
+			}
+		}()
+	}
+
 	// Making migrations
 	err = db.AutoMigrate(database.Models...)
 	if err != nil {
@@ -52,16 +70,6 @@ func run(logger *zap.Logger) error {
 		return nil
 	}
 
-	// Configuring bot
-	if token := config.Telegram.Token; token != "" {
-		botAPI, err := tgbotapi.NewBotAPI(token)
-		if err != nil {
-			return err
-		}
-		bot := telegram.NewBot(ctx, botAPI, db, logger.Named("telegram"))
-		bot.Start()
-	}
-
 	// Configuring gin
 	router := gin.Default()
 	router.Static("/assets", "./assets")
@@ -69,18 +77,30 @@ func run(logger *zap.Logger) error {
 	router.Use(cors.Default())
 
 	// Configuring API
-	apiGroup := router.Group("/api")
 	var tokenAuthMiddleware middleware.TokenAuth
 	if config.noAuth {
 		tokenAuthMiddleware = middleware.NewDevTokenAuth()
 	} else {
 		tokenAuthMiddleware = middleware.NewTokenAuth(db, logger.Named("TokenAuthMiddleware"))
 	}
-	apiGroup.Use(tokenAuthMiddleware.Auth)
 
-	// User API
-	usersAPI := api.NewUsersAPI(ctx, db, logger.Named("api/users"))
-	usersAPI.RegisterRoutes(apiGroup)
+	// Configuring groups
+	loginGroup := router.Group("/login")
+	profileGroup := router.Group("/profile")
+	mainGroup := router.Group("/")
+
+	// TokenAuthMiddleware
+	mainGroup.Use(tokenAuthMiddleware.Auth)
+	profileGroup.Use(tokenAuthMiddleware.Auth)
+
+	// ProfileRedirectMiddleware
+	mainGroup.Use(middleware.ProfileRedirectMiddleware())
+
+	// Views
+	viewsModule := views.NewViews(db, logger.Named("views"))
+	viewsModule.RegisterRoutes(mainGroup)
+	viewsModule.RegisterLogin(loginGroup)
+	viewsModule.RegisterProfile(profileGroup)
 
 	// Starting server
 	logger.Info("Starting server...")

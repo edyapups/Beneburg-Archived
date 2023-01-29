@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"beneburg/pkg/database"
+	"beneburg/pkg/database/model"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"net/http"
 )
 
 type TokenAuth interface {
@@ -15,17 +17,27 @@ type tokenAuth struct {
 }
 
 func (t tokenAuth) Auth(ctx *gin.Context) {
-	token := ctx.Request.Header.Get("Authorization")
-	if token == "" {
-		ctx.AbortWithStatusJSON(401, gin.H{"error": "token is required"})
-		return
-	}
-	userID, err := t.db.GetUserIDByToken(ctx, token)
+	token, err := ctx.Cookie("token")
 	if err != nil {
-		ctx.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
+		t.logger.Named("Auth").Info("No token provided", zap.Any("headers", ctx.Request.Header))
+		ctx.SetCookie("token", "", -1, "/", "", false, true)
+		ctx.Redirect(http.StatusFound, "/login")
 		return
 	}
-	ctx.Set("currentUserID", userID)
+
+	user, err := t.db.GetUserByToken(ctx, token)
+	if err != nil {
+		t.logger.Named("Auth").Info("Error getting user id by token", zap.Error(err))
+		ctx.SetCookie("token", "", -1, "/", "", false, true)
+		ctx.Redirect(http.StatusFound, "/login")
+		return
+	}
+	if user.Status == model.UserStatusBanned {
+		t.logger.Named("Auth").Info("User is banned", zap.Any("user", user))
+		ctx.Redirect(http.StatusFound, "/ban")
+		return
+	}
+	ctx.Set("currentUser", user)
 }
 
 func NewTokenAuth(db database.Database, logger *zap.Logger) TokenAuth {

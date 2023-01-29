@@ -16,6 +16,7 @@ import (
 func Use(db *gorm.DB) *Query {
 	return &Query{
 		db:    db,
+		Form:  newForm(db),
 		Token: newToken(db),
 		User:  newUser(db),
 	}
@@ -24,6 +25,7 @@ func Use(db *gorm.DB) *Query {
 type Query struct {
 	db *gorm.DB
 
+	Form  form
 	Token token
 	User  user
 }
@@ -33,6 +35,7 @@ func (q *Query) Available() bool { return q.db != nil }
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
 		db:    db,
+		Form:  q.Form.clone(db),
 		Token: q.Token.clone(db),
 		User:  q.User.clone(db),
 	}
@@ -51,12 +54,14 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 }
 
 type queryCtx struct {
+	Form  *formDo
 	Token *tokenDo
 	User  *userDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
+		Form:  q.Form.WithContext(ctx),
 		Token: q.Token.WithContext(ctx),
 		User:  q.User.WithContext(ctx),
 	}
