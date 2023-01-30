@@ -3,8 +3,10 @@ package views
 import (
 	"beneburg/pkg/database"
 	"beneburg/pkg/database/model"
+	"beneburg/pkg/telegram"
 	"beneburg/pkg/utils"
 	"github.com/gin-gonic/gin"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
@@ -19,8 +21,9 @@ type Views interface {
 var _ Views = &views{}
 
 type views struct {
-	db     database.Database
-	logger *zap.Logger
+	db        database.Database
+	logger    *zap.Logger
+	sendToBot telegram.TelegramBotSendFunc
 }
 
 func (v views) RegisterRoutes(router gin.IRouter) {
@@ -37,10 +40,11 @@ func (v views) RegisterLogin(router gin.IRouter) {
 	router.GET("/:token", v.login)
 }
 
-func NewViews(db database.Database, logger *zap.Logger) Views {
+func NewViews(db database.Database, logger *zap.Logger, sendFunc telegram.TelegramBotSendFunc) Views {
 	return &views{
-		db:     db,
-		logger: logger,
+		db:        db,
+		logger:    logger,
+		sendToBot: sendFunc,
 	}
 }
 
@@ -136,5 +140,7 @@ func (v views) profileForm(g *gin.Context) {
 	if err != nil {
 		v.logger.Named("profileForm").Error("Error creating form", zap.Error(err))
 	}
+	message := tgbotapi.NewMessage(user.TelegramID, "Мы получили вашу анкету, ожидайте ответа!")
+	v.sendToBot(message)
 	g.Redirect(http.StatusFound, "/profile")
 }

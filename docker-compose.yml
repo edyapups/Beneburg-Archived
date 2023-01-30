@@ -32,8 +32,10 @@ services:
       - ONLY_MAKE_MIGRATIONS
       - NO_AUTH
       - ENVIRONMENT
-      - DOMAIN
+      - TLS
       - TRUSTED_PROXY
+      - ADMIN_ID
+      - GROUP_ID
     build:
         context: .
         dockerfile: deploy/server/Dockerfile

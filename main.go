@@ -6,15 +6,19 @@ import (
 	"beneburg/pkg/telegram"
 	"beneburg/pkg/views"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/crypto/acme/autocert"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -36,28 +40,11 @@ func run(logger *zap.Logger) error {
 
 	config, err := loadConfig()
 
+
 	// Creating database connection
 	db, err := database.NewDatabase(config.Database.DataSourceName, logger.Named("database"))
 	if err != nil {
 		return err
-	}
-
-	// Configuring bot
-	if token := config.Telegram.Token; token != "" {
-		botAPI, err := tgbotapi.NewBotAPI(token)
-		if err != nil {
-			return err
-		}
-		bot := telegram.NewBot(ctx, botAPI, db, logger.Named("telegram"))
-		bot.Start()
-
-		// Log panic
-		defer func() {
-			if r := recover(); r != nil {
-				logger.Error("panic", zap.Any("panic", r))
-				panic(r)
-			}
-		}()
 	}
 
 	// Making migrations
@@ -72,10 +59,60 @@ func run(logger *zap.Logger) error {
 		return nil
 	}
 
+
+
+	// TLS
+	var tlsConfig *tls.Config
+	var manager *autocert.Manager
+	if config.tls {
+		manager = &autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist("api.telegram.org"),
+			Cache:      autocert.DirCache("/root/.cache/golang-autocert"),
+		}
+		tlsConfig = &tls.Config{
+			GetCertificate: manager.GetCertificate,
+		}
+	}
+
+
+
+	// Configuring bot
+	var SendFunc telegram.TelegramBotSendFunc
+	if token := config.Telegram.Token; token != "" {
+		botAPI, err := tgbotapi.NewBotAPI(token)
+		if err != nil {
+			return err
+		}
+		bot := telegram.NewBot(ctx, botAPI, db)
+		bot.Start()
+		SendFunc = bot.GetSendFunc()
+		if config.Telegram.AdminID != nil {
+			logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
+				if entry.Level < zapcore.WarnLevel {
+					return nil
+				}
+				msg := tgbotapi.NewMessage(*config.Telegram.AdminID, fmt.Sprintf("%s: %s (%s)", entry.Level, entry.Message, entry.Caller))
+				SendFunc(msg)
+				return nil
+			}))
+		}
+		bot.SetLogger(logger.Named("telegram"))
+	}
+
+	// Log panic
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Panic("panic", zap.Any("panic", r))
+		}
+	}()
+
+
+
 	// Configuring gin
 	router := gin.Default()
 	if config.trustedProxy != "" {
-		err := router.SetTrustedProxies([]string{config.trustedProxy})
+		err := router.SetTrustedProxies(strings.Split(config.trustedProxy, ","))
 		if err != nil {
 			return err
 		}
@@ -105,22 +142,24 @@ func run(logger *zap.Logger) error {
 	mainGroup.Use(middleware.ProfileRedirectMiddleware())
 
 	// Views
-	viewsModule := views.NewViews(db, logger.Named("views"))
+	viewsModule := views.NewViews(db, logger.Named("views"), SendFunc)
 	viewsModule.RegisterRoutes(mainGroup)
 	viewsModule.RegisterLogin(loginGroup)
 	viewsModule.RegisterProfile(profileGroup)
 
+
+
 	// Starting server
 	logger.Info("Starting server...")
-	if config.domain != "" {
+	if config.tls {
 		logger.Info("Starting HTTPS server...")
-		logger.Info("Domain: " + config.domain)
 		s1 := &http.Server{
 			Addr:    ":http",
 			Handler: http.HandlerFunc(redirect),
 		}
 		s2 := &http.Server{
-			Handler: router,
+			TLSConfig: tlsConfig,
+			Handler:   router,
 		}
 
 		// TODO: add goroutine waitgroup
@@ -131,7 +170,7 @@ func run(logger *zap.Logger) error {
 			}
 		}()
 		go func() {
-			err := s2.Serve(autocert.NewListener(config.domain))
+			err := s2.Serve(manager.Listener())
 			if err != nil {
 				logger.Error("Serve", zap.Error(err))
 			}
@@ -153,6 +192,8 @@ func run(logger *zap.Logger) error {
 
 	logger.Info("Server started")
 	logger.Info("All ready")
+
+
 
 	// Waiting for signal
 	sigs := make(chan os.Signal, 1)
@@ -183,9 +224,11 @@ type Config struct {
 		OnlyMakeMigrations bool
 	}
 	Telegram struct {
-		Token string
+		Token   string
+		AdminID *int64
+		GroupID *int64
 	}
-	domain       string
+	tls          bool
 	trustedProxy string
 	noAuth       bool
 }
@@ -209,8 +252,24 @@ func loadConfig() (*Config, error) {
 	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
 	botToken := os.Getenv("BOT_TOKEN")
 	noAuth := os.Getenv("NO_AUTH") == "true"
-	domain := os.Getenv("DOMAIN")
+	tlsEnv := os.Getenv("TLS") == "true"
 	trustedProxy := os.Getenv("TRUSTED_PROXY")
+
+	var adminID, groupID *int64
+	if strVal := os.Getenv("ADMIN_ID"); strVal != "" {
+		val, err := strconv.ParseInt(strVal, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		adminID = &val
+	}
+	if strVal := os.Getenv("GROUP_ID"); strVal != "" {
+		val, err := strconv.ParseInt(strVal, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		groupID = &val
+	}
 
 	if dbHost == "" {
 		dbHost = "localhost"
@@ -239,11 +298,15 @@ func loadConfig() (*Config, error) {
 			OnlyMakeMigrations: onlyMakeMigrations,
 		},
 		Telegram: struct {
-			Token string
+			Token   string
+			AdminID *int64
+			GroupID *int64
 		}{
-			Token: botToken,
+			Token:   botToken,
+			AdminID: adminID,
+			GroupID: groupID,
 		},
-		domain:       domain,
+		tls:          tlsEnv,
 		trustedProxy: trustedProxy,
 		noAuth:       noAuth,
 	}, nil
