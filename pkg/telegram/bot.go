@@ -6,39 +6,59 @@ import (
 	"context"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 	"time"
 )
 
 //go:generate mockgen -source=bot.go -destination=./mocks/mock_bot.go -package=mock_telegram
-type Bot struct {
+type Bot interface {
+	Start()
+	GetSendFunc() TelegramBotSendFunc
+	SetLogger(logger *zap.Logger)
+}
+
+type TelegramBotSendFunc func(message tgbotapi.Chattable)
+
+type botManager struct {
 	bot       TgBotAPI
 	db        database.Database
 	templator Templator
 
-	messageQueue chan tgbotapi.Update
+	updatesChan  chan tgbotapi.Update
+	messagesChan chan tgbotapi.Chattable
 
 	ctx    context.Context
 	logger *zap.Logger
 }
 
-func NewBot(ctx context.Context, bot TgBotAPI, db database.Database, logger *zap.Logger) *Bot {
-	return &Bot{
+func NewBot(ctx context.Context, bot TgBotAPI, db database.Database) Bot {
+	return &botManager{
 		bot:       bot,
 		templator: NewTemplator(),
 		db:        db,
 		ctx:       ctx,
-		logger:    logger,
 	}
 }
 
-func (b *Bot) Start() {
-	b.messageQueue = make(chan tgbotapi.Update, 100)
+func (b *botManager) SetLogger(logger *zap.Logger) {
+	b.logger = logger
+}
+
+// TODO: will be parallelized
+func (b *botManager) GetSendFunc() TelegramBotSendFunc {
+	return b.send
+}
+
+func (b *botManager) Start() {
+	b.updatesChan = make(chan tgbotapi.Update, 60)
+	b.messagesChan = make(chan tgbotapi.Chattable, 60)
 	go b.startGettingUpdates()
 	go b.startProcessingUpdates()
+	go b.startProcessingMessages()
 }
 
 // TODO: add With() with context to all loggings
-func (b *Bot) startGettingUpdates() {
+func (b *botManager) startGettingUpdates() {
 	var offset = 0
 	for {
 		select {
@@ -60,24 +80,53 @@ func (b *Bot) startGettingUpdates() {
 		for _, update := range updates {
 			if update.UpdateID >= offset {
 				offset = update.UpdateID + 1
-				b.messageQueue <- update
+				b.updatesChan <- update
 			}
 		}
 	}
 }
 
-func (b *Bot) startProcessingUpdates() {
+func (b *botManager) startProcessingUpdates() {
 	for {
 		select {
 		case <-b.ctx.Done():
 			return
-		case update := <-b.messageQueue:
+		case update := <-b.updatesChan:
 			b.processUpdate(update)
 		}
 	}
 }
 
-func (b *Bot) processUpdate(update tgbotapi.Update) {
+func (b *botManager) startProcessingMessages() {
+	limiter := rate.NewLimiter(30, 30)
+	for {
+		select {
+		case <-b.ctx.Done():
+			return
+		case message := <-b.messagesChan:
+			_ = limiter.Wait(b.ctx)
+			_, err := b.bot.Send(message)
+			switch typedErr := err.(type) {
+			case tgbotapi.Error:
+				if typedErr.Code == 429 {
+					b.logger.Named("startProcessingMessages").Info("Too many requests, sleeping for 1 second")
+					b.messagesChan <- message
+					time.Sleep(time.Second)
+				}
+			case nil:
+				continue
+			default:
+				b.logger.Named("startProcessingMessages").Error("Error while sending message", zap.Error(err), zap.Any("message", message))
+			}
+		}
+	}
+}
+
+func (b *botManager) send(message tgbotapi.Chattable) {
+	b.messagesChan <- message
+}
+
+func (b *botManager) processUpdate(update tgbotapi.Update) {
 	b.logger.Named("processUpdate").Info("Processing update", zap.Int("update_id", update.UpdateID))
 	b.logger.Named("processUpdate").Debug("Update", zap.Any("update", update))
 	if update.Message != nil {
@@ -85,7 +134,7 @@ func (b *Bot) processUpdate(update tgbotapi.Update) {
 	}
 }
 
-func (b *Bot) processMessage(message *tgbotapi.Message) {
+func (b *botManager) processMessage(message *tgbotapi.Message) {
 	b.logger.Named("processMessage").Debug("Processing message", zap.Any("message", message))
 	if from := message.From; from != nil && !from.IsBot {
 		user := model.User{
@@ -114,7 +163,7 @@ func (b *Bot) processMessage(message *tgbotapi.Message) {
 		b.processGroupMessage(message)
 	}
 }
-func (b *Bot) processPrivateMessage(message *tgbotapi.Message) {
+func (b *botManager) processPrivateMessage(message *tgbotapi.Message) {
 	b.logger.Named("processPrivateMessage").Debug("Processing private message", zap.Any("message", message))
 	if message.IsCommand() {
 		b.processPrivateCommand(message)
@@ -127,7 +176,7 @@ func (b *Bot) processPrivateMessage(message *tgbotapi.Message) {
 	}
 }
 
-func (b *Bot) processGroupMessage(message *tgbotapi.Message) {
+func (b *botManager) processGroupMessage(message *tgbotapi.Message) {
 	if message.IsCommand() {
 		b.processGroupCommand(message)
 		return
@@ -139,23 +188,19 @@ func (b *Bot) processGroupMessage(message *tgbotapi.Message) {
 	}
 }
 
-func (b *Bot) processGroupCommand(message *tgbotapi.Message) {
+func (b *botManager) processGroupCommand(message *tgbotapi.Message) {
 	if message.Command() == "info" {
 		b.processInfoCommand(message)
 		return
 	}
 }
 
-func (b *Bot) processPing(message *tgbotapi.Message) {
+func (b *botManager) processPing(message *tgbotapi.Message) {
 	b.logger.Named("processPing").Debug("Processing ping", zap.Any("message", message))
-	_, err := b.bot.Send(tgbotapi.NewMessage(message.Chat.ID, "pong"))
-	if err != nil {
-		b.logger.Named("processPing").Error("Error while sending message", zap.Error(err))
-		return
-	}
+	b.send(tgbotapi.NewMessage(message.Chat.ID, "pong"))
 }
 
-func (b *Bot) processPrivateCommand(message *tgbotapi.Message) {
+func (b *botManager) processPrivateCommand(message *tgbotapi.Message) {
 	b.logger.Named("processPrivateCommand").Debug("Processing private command", zap.Any("message", message))
 	if message.Command() == "login" {
 		b.processLoginCommand(message)
@@ -163,13 +208,9 @@ func (b *Bot) processPrivateCommand(message *tgbotapi.Message) {
 	}
 }
 
-func (b *Bot) processInfoCommand(message *tgbotapi.Message) {
+func (b *botManager) processInfoCommand(message *tgbotapi.Message) {
 	if message.ReplyToMessage == nil || message.ReplyToMessage.From == nil {
-		_, err := b.bot.Send(tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandNoReply()))
-		if err != nil {
-			b.logger.Named("processInfoCommand").Error("Error while sending message", zap.Error(err))
-			return
-		}
+		b.send(tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandNoReply()))
 		return
 	}
 	user, err := b.db.GetUserByTelegramID(b.ctx, message.ReplyToMessage.From.ID)
@@ -178,23 +219,15 @@ func (b *Bot) processInfoCommand(message *tgbotapi.Message) {
 		return
 	}
 	if user == nil {
-		_, err := b.bot.Send(tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandNoUser()))
-		if err != nil {
-			b.logger.Named("processInfoCommand").Error("Error while sending message", zap.Error(err))
-			return
-		}
+		b.send(tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandNoUser()))
 		return
 	}
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandReply(user))
 	msg.ParseMode = tgbotapi.ModeHTML
-	_, err = b.bot.Send(msg)
-	if err != nil {
-		b.logger.Named("processInfoCommand").Error("Error while sending message", zap.Error(err))
-		return
-	}
+	b.send(msg)
 }
 
-func (b *Bot) processLoginCommand(message *tgbotapi.Message) {
+func (b *botManager) processLoginCommand(message *tgbotapi.Message) {
 	b.logger.Named("processLoginCommand").Debug("Processing login command", zap.Any("message", message))
 	if message.From == nil {
 		b.logger.Named("processLoginCommand").Error("Message's From is nil")
@@ -208,9 +241,5 @@ func (b *Bot) processLoginCommand(message *tgbotapi.Message) {
 	b.logger.Named("processLoginCommand").Debug("Token created", zap.Any("token", token))
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.LoginCommandReply(token))
 	msg.ParseMode = tgbotapi.ModeHTML
-	_, err = b.bot.Send(msg)
-	if err != nil {
-		b.logger.Named("processLoginCommand").Error("Error while sending message", zap.Error(err))
-		return
-	}
+	b.send(msg)
 }
