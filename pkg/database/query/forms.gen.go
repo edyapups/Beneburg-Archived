@@ -34,7 +34,7 @@ func newForm(db *gorm.DB) form {
 	_form.UserTelegramId = field.NewInt64(tableName, "user_telegram_id")
 	_form.Name = field.NewString(tableName, "name")
 	_form.Age = field.NewInt32(tableName, "age")
-	_form.Sex = field.NewString(tableName, "sex")
+	_form.Gender = field.NewString(tableName, "gender")
 	_form.About = field.NewString(tableName, "about")
 	_form.Hobbies = field.NewString(tableName, "hobbies")
 	_form.Work = field.NewString(tableName, "work")
@@ -64,7 +64,7 @@ type form struct {
 	UserTelegramId field.Int64
 	Name           field.String
 	Age            field.Int32
-	Sex            field.String
+	Gender         field.String
 	About          field.String
 	Hobbies        field.String
 	Work           field.String
@@ -96,7 +96,7 @@ func (f *form) updateTableName(table string) *form {
 	f.UserTelegramId = field.NewInt64(table, "user_telegram_id")
 	f.Name = field.NewString(table, "name")
 	f.Age = field.NewInt32(table, "age")
-	f.Sex = field.NewString(table, "sex")
+	f.Gender = field.NewString(table, "gender")
 	f.About = field.NewString(table, "about")
 	f.Hobbies = field.NewString(table, "hobbies")
 	f.Work = field.NewString(table, "work")
@@ -134,7 +134,7 @@ func (f *form) fillFieldMap() {
 	f.fieldMap["user_telegram_id"] = f.UserTelegramId
 	f.fieldMap["name"] = f.Name
 	f.fieldMap["age"] = f.Age
-	f.fieldMap["sex"] = f.Sex
+	f.fieldMap["gender"] = f.Gender
 	f.fieldMap["about"] = f.About
 	f.fieldMap["hobbies"] = f.Hobbies
 	f.fieldMap["work"] = f.Work

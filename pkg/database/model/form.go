@@ -17,7 +17,7 @@ type Form struct {
 
 	Name        string  `gorm:"column:name" json:"name"`
 	Age         *int32  `gorm:"column:age" json:"age"`
-	Sex         string  `gorm:"column:sex; type:enum('male', 'female', 'nonbinary', 'undefined');default:'undefined'" json:"sex"`
+	Gender      string  `gorm:"column:gender; type:enum('male', 'female', 'nonbinary', 'undefined');default:'undefined'" json:"gender"`
 	About       *string `gorm:"column:about" json:"about"`
 	Hobbies     *string `gorm:"column:hobbies" json:"hobbies"`
 	Work        *string `gorm:"column:work" json:"work"`
@@ -28,11 +28,11 @@ type Form struct {
 	Status string `gorm:"column:status; type:enum('new', 'accepted', 'rejected');default:'new'" json:"status"`
 }
 
-func (u *Form) RuSex() string {
+func (u *Form) RuGender() string {
 	if u == nil {
 		return ""
 	}
-	switch u.Sex {
+	switch u.Gender {
 	case "male":
 		return "мужской"
 	case "female":
@@ -47,7 +47,7 @@ func (u *Form) RuSex() string {
 const (
 	UserNameDescription        = "Имя"
 	UserAgeDescription         = "Возраст"
-	UserSexDescription         = "Пол"
+	UserGenderDescription      = "Пол"
 	UserAboutDescription       = "О себе"
 	UserHobbiesDescription     = "Хобби"
 	UserWorkDescription        = "Работа"

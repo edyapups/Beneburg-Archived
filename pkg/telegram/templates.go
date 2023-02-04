@@ -11,7 +11,7 @@ import (
 type Templator interface {
 	InfoCommandNoReply() string
 	InfoCommandNoUser() string
-	InfoCommandReply(user *model.User) string
+	InfoCommandReply(user *model.User, form *model.Form) string
 	LoginCommandReply(token *model.Token) string
 }
 
@@ -31,9 +31,42 @@ func (t templator) InfoCommandNoUser() string {
 	return "У меня нет информации об этом пользователе"
 }
 
-func (t templator) InfoCommandReply(user *model.User) string {
+func (t templator) InfoCommandReply(user *model.User, form *model.Form) string {
 	stringBuilder := strings.Builder{}
+	stringBuilder.WriteString("<b>Информация об участнике:</b>")
 	AddDelimiter(&stringBuilder)
+	stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserNameDescription, form.Name))
+	AddDelimiter(&stringBuilder)
+	if form.Age != nil {
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserAgeDescription, form.Age))
+		AddDelimiter(&stringBuilder)
+	}
+	stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserGenderDescription, form.Gender))
+	AddDelimiter(&stringBuilder)
+	if form.About != nil {
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserAboutDescription, form.About))
+		AddDelimiter(&stringBuilder)
+	}
+	if form.Hobbies != nil {
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserHobbiesDescription, form.Hobbies))
+		AddDelimiter(&stringBuilder)
+	}
+	if form.Work != nil {
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserWorkDescription, form.Work))
+		AddDelimiter(&stringBuilder)
+	}
+	if form.Education != nil {
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserEducationDescription, form.Education))
+		AddDelimiter(&stringBuilder)
+	}
+	if form.CoverLetter != nil {
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserCoverLetterDescription, form.CoverLetter))
+		AddDelimiter(&stringBuilder)
+	}
+	if form.Contacts != nil {
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserContactsDescription, form.Contacts))
+		AddDelimiter(&stringBuilder)
+	}
 
 	stringBuilder.WriteString(fmt.Sprintf(
 		"<i>ID <a href=\"tg://user?id=%d\">пользователя</a>: </i><code>%d</code>",

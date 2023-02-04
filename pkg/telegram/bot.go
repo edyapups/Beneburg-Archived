@@ -33,10 +33,12 @@ type botManager struct {
 
 func NewBot(ctx context.Context, bot TgBotAPI, db database.Database) Bot {
 	return &botManager{
-		bot:       bot,
-		templator: NewTemplator(),
-		db:        db,
-		ctx:       ctx,
+		bot:          bot,
+		templator:    NewTemplator(),
+		db:           db,
+		ctx:          ctx,
+		updatesChan:  make(chan tgbotapi.Update, 60),
+		messagesChan: make(chan tgbotapi.Chattable, 60),
 	}
 }
 
@@ -50,8 +52,6 @@ func (b *botManager) GetSendFunc() TelegramBotSendFunc {
 }
 
 func (b *botManager) Start() {
-	b.updatesChan = make(chan tgbotapi.Update, 60)
-	b.messagesChan = make(chan tgbotapi.Chattable, 60)
 	go b.startGettingUpdates()
 	go b.startProcessingUpdates()
 	go b.startProcessingMessages()
@@ -202,6 +202,10 @@ func (b *botManager) processPing(message *tgbotapi.Message) {
 
 func (b *botManager) processPrivateCommand(message *tgbotapi.Message) {
 	b.logger.Named("processPrivateCommand").Debug("Processing private command", zap.Any("message", message))
+	if message.Command() == "start" {
+		b.processStartCommand(message)
+		return
+	}
 	if message.Command() == "login" {
 		b.processLoginCommand(message)
 		return
@@ -222,7 +226,12 @@ func (b *botManager) processInfoCommand(message *tgbotapi.Message) {
 		b.send(tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandNoUser()))
 		return
 	}
-	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandReply(user))
+	form, err := b.db.GetActualForm(b.ctx, user.TelegramID)
+	if err != nil {
+		b.logger.Named("processInfoCommand").Error("Error while getting user's form from db", zap.Error(err))
+		return
+	}
+	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandReply(user, form))
 	msg.ParseMode = tgbotapi.ModeHTML
 	b.send(msg)
 }
@@ -242,4 +251,12 @@ func (b *botManager) processLoginCommand(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.LoginCommandReply(token))
 	msg.ParseMode = tgbotapi.ModeHTML
 	b.send(msg)
+}
+
+func (b *botManager) processStartCommand(message *tgbotapi.Message) {
+	b.logger.Named("processStartCommand").Debug("Processing start command", zap.Any("message", message))
+	if message.From == nil {
+		b.logger.Named("processStartCommand").Error("Message's From is nil")
+		return
+	}
 }
