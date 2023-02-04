@@ -60,10 +60,7 @@ func (v views) index(g *gin.Context) {
 func (v views) login(g *gin.Context) {
 	token := g.Param("token")
 	if token == "" {
-		g.HTML(200, "login.gohtml", gin.H{
-			"title": "Вход",
-			"page":  "login",
-		})
+		g.Redirect(301, "https://t.me/BeneburgBot")
 		return
 	}
 	g.SetCookie("token", token, 60*60*24, "/", "", false, true)
@@ -107,10 +104,9 @@ func (v views) profileForm(g *gin.Context) {
 		}
 		form.Age = utils.GetAddress(int32(convertedAge))
 	}
-	sexFormValue, ok := g.GetPostForm("sex")
+	genderFormValue, ok := g.GetPostForm("gender")
 	if ok {
-
-		form.Sex = sexFormValue
+		form.Gender = genderFormValue
 	}
 	aboutFormValue, ok := g.GetPostForm("about")
 	if ok {

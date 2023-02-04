@@ -6,45 +6,51 @@
     {{ if or (ne .form.Status "new") (.no_forms) }}
         <form method="post" action="/{{ .page }}/form">
             <div class="mb-3">
-                <label class="form-label" for="nameField">Имя</label>
+                <label class="form-label fs-5 fw-bold" for="nameField">Как к тебе обращаться?</label>
                 <input required type="text" class="form-control" name="name" id="nameField" placeholder="Имя" {{ with .form.Name }} value="{{.}}" {{end}}>
             </div>
             <div class="mb-3">
-                <label class="form-label" for="ageField">Возраст</label>
+                <label class="form-label fs-5 fw-bold" for="ageField">Твой возраст?</label>
                 <input required type="number" class="form-control" name="age" id="ageField" placeholder="Возраст" {{ with .form.Age }}value="{{.}}" {{end}}>
             </div>
             <div class="mb-3">
-                <label class="form-label" for="sexField">Гендер</label>
-                <select class="form-select" name="sex" id="sexField">
-                    <option value="male" {{ if eq .form.Sex "male" }} selected {{end}}>Мужской</option>
-                    <option value="female" {{ if eq .form.Sex "female" }} selected {{end}}>Женский</option>
-                    <option value="nonbinary" {{ if eq .form.Sex "nonbinary" }} selected {{end}}>Небинарный</option>
-                    <option value="undefined" {{ if eq .form.Sex "undefined" }} selected {{end}}>Не указан</option>
+                <label class="form-label fs-5 fw-bold" for="genderField">Гендер</label>
+                <select class="form-select" name="gender" id="genderField">
+                    <option value="male" {{ if eq .form.Gender "male" }} selected {{end}}>Мужской</option>
+                    <option value="female" {{ if eq .form.Gender "female" }} selected {{end}}>Женский</option>
+                    <option value="nonbinary" {{ if eq .form.Gender "nonbinary" }} selected {{end}}>Небинарный</option>
+                    <option value="undefined" {{ if eq .form.Gender "undefined" }} selected {{end}}>Не указан</option>
                 </select>
             </div>
             <div class="mb-3">
-                <label class="form-label" for="aboutField">О себе</label>
+                <label class="form-label fs-5 fw-bold" for="aboutField">Расскажи о себе, своем характере, социальных, политических и других интересных взглядах!</label>
                 <textarea required class="form-control" name="about" id="aboutField" rows="4">{{with .form.About }}{{.}}{{end}}</textarea>
+                <div class="form-text">Может быть ты мечтатель-трансгуманист, любящий котиков и топящий за необходимость обязать каждую семью иметь дома попугая? Пиши что угодно, нам все интересно)</div>
             </div>
             <div class="mb-3">
-                <label class="form-label" for="hobbiesField">Увлечения</label>
+                <label class="form-label fs-5 fw-bold" for="hobbiesField">Расскажи о своих хобби!</label>
                 <textarea class="form-control" name="hobbies" id="hobbiesField" rows="4">{{with .form.Hobbies}}{{.}}{{end}}</textarea>
+                <div class="form-text">Какие у тебя есть увлечения? Чем ты занимаешься в свободное время? Что тебе нравится делать?</div>
             </div>
             <div class="mb-3">
-                <label class="form-label" for="workField">Работа</label>
+                <label class="form-label fs-5 fw-bold" for="workField">Кем ты работаешь?</label>
                 <textarea class="form-control" name="work" id="workField" rows="4">{{with .form.Work}}{{.}}{{end}}</textarea>
+                <div class="form-text">Ничего страшного, если не работаешь ;)</div>
             </div>
             <div class="mb-3">
-                <label class="form-label" for="educationField">Образование</label>
+                <label class="form-label fs-5 fw-bold" for="educationField">На кого ты учишься или учился_ась?</label>
                 <textarea class="form-control" name="education" id="educationField" rows="4">{{with .form.Education}}{{.}}{{end}}</textarea>
+                <div class="form-text">ВУЗ или ССУЗ тоже можно указать</div>
             </div>
             <div class="mb-3">
-                <label class="form-label" for="coverLetterField">Почему хочешь к нам?</label>
+                <label class="form-label fs-5 fw-bold" for="coverLetterField">Почему хочешь к нам?</label>
                 <textarea required class="form-control" name="cover_letter" id="coverLetterField" rows="4">{{with .form.CoverLetter}}{{.}}{{end}}</textarea>
+                <div class="form-text">Очень опциональное поле, тут можешь рассказать почему хочешь в чатик</div>
             </div>
             <div class="mb-3">
-                <label class="form-label" for="contactsField">Контакты</label>
+                <label class="form-label fs-5 fw-bold" for="contactsField">Контакты</label>
                 <textarea class="form-control" name="contacts" id="contactsField" rows="4">{{with .form.Contacts}}{{.}}{{end}}</textarea>
+                <div class="form-text">Тут можно указать ссылочки на свои соцсети</div>
             </div>
             <button type="submit" class="btn btn-primary">Отправить</button>
         </form>
