@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func Test_database_AutoMigrate(t *testing.T) {
+func Test_database(t *testing.T) {
 	ctx := context.Background()
 	dbMock, mock, err := sqlmock.New()
 	assert.NoError(t, err)
