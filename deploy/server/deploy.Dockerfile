@@ -6,9 +6,9 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY pkg ./pkg
-COPY main.go ./
+COPY beneburg.go ./
 
-RUN go build -o /main
+RUN go build -o /beneburg
 
 
 ## Deploy
@@ -19,9 +19,8 @@ WORKDIR /
 
 COPY templates /templates
 COPY assets /assets
-COPY --from=build /main /main
+COPY --from=build /beneburg /beneburg
 
-EXPOSE 443
-EXPOSE 80
+EXPOSE 8080
 
-ENTRYPOINT ["/main"]
+ENTRYPOINT ["/beneburg"]

@@ -6,15 +6,12 @@ import (
 	"beneburg/pkg/telegram"
 	"beneburg/pkg/views"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/crypto/acme/autocert"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -39,7 +36,7 @@ func run(logger *zap.Logger) error {
 	defer cancel()
 
 	config, err := loadConfig()
-
+	logger.Info("config loaded", zap.Any("config", config))
 
 	// Creating database connection
 	db, err := database.NewDatabase(config.Database.DataSourceName, logger.Named("database"))
@@ -59,24 +56,6 @@ func run(logger *zap.Logger) error {
 		return nil
 	}
 
-
-
-	// TLS
-	var tlsConfig *tls.Config
-	var manager *autocert.Manager
-	if config.tls {
-		manager = &autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist("api.telegram.org"),
-			Cache:      autocert.DirCache("/root/.cache/golang-autocert"),
-		}
-		tlsConfig = &tls.Config{
-			GetCertificate: manager.GetCertificate,
-		}
-	}
-
-
-
 	// Configuring bot
 	var SendFunc telegram.TelegramBotSendFunc
 	if token := config.Telegram.Token; token != "" {
@@ -85,7 +64,6 @@ func run(logger *zap.Logger) error {
 			return err
 		}
 		bot := telegram.NewBot(ctx, botAPI, db)
-		bot.Start()
 		SendFunc = bot.GetSendFunc()
 		if config.Telegram.AdminID != nil {
 			logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
@@ -98,6 +76,7 @@ func run(logger *zap.Logger) error {
 			}))
 		}
 		bot.SetLogger(logger.Named("telegram"))
+		bot.Start()
 	}
 
 	// Log panic
@@ -106,8 +85,6 @@ func run(logger *zap.Logger) error {
 			logger.Panic("panic", zap.Any("panic", r))
 		}
 	}()
-
-
 
 	// Configuring gin
 	router := gin.Default()
@@ -147,53 +124,16 @@ func run(logger *zap.Logger) error {
 	viewsModule.RegisterLogin(loginGroup)
 	viewsModule.RegisterProfile(profileGroup)
 
-
-
 	// Starting server
-	logger.Info("Starting server...")
-	if config.tls {
-		logger.Info("Starting HTTPS server...")
-		s1 := &http.Server{
-			Addr:    ":http",
-			Handler: http.HandlerFunc(redirect),
+	go func() {
+		err := router.Run()
+		if err != nil {
+			logger.Error("ListenAndServe", zap.Error(err))
 		}
-		s2 := &http.Server{
-			TLSConfig: tlsConfig,
-			Handler:   router,
-		}
-
-		// TODO: add goroutine waitgroup
-		go func() {
-			err := s1.ListenAndServe()
-			if err != nil {
-				logger.Error("ListenAndServe", zap.Error(err))
-			}
-		}()
-		go func() {
-			err := s2.Serve(manager.Listener())
-			if err != nil {
-				logger.Error("Serve", zap.Error(err))
-			}
-		}()
-	} else {
-		logger.Info("Starting HTTP server...")
-		s1 := &http.Server{
-			Addr:    ":8080",
-			Handler: router,
-		}
-		// TODO: add goroutine waitgroup
-		go func() {
-			err := s1.ListenAndServe()
-			if err != nil {
-				logger.Error("ListenAndServe", zap.Error(err))
-			}
-		}()
-	}
+	}()
 
 	logger.Info("Server started")
 	logger.Info("All ready")
-
-
 
 	// Waiting for signal
 	sigs := make(chan os.Signal, 1)
@@ -231,6 +171,7 @@ type Config struct {
 	tls          bool
 	trustedProxy string
 	noAuth       bool
+	domain       string
 }
 
 func loadConfig() (*Config, error) {
@@ -252,7 +193,6 @@ func loadConfig() (*Config, error) {
 	onlyMakeMigrations := os.Getenv("ONLY_MAKE_MIGRATIONS") == "true"
 	botToken := os.Getenv("BOT_TOKEN")
 	noAuth := os.Getenv("NO_AUTH") == "true"
-	tlsEnv := os.Getenv("TLS") == "true"
 	trustedProxy := os.Getenv("TRUSTED_PROXY")
 
 	var adminID, groupID *int64
@@ -306,14 +246,7 @@ func loadConfig() (*Config, error) {
 			AdminID: adminID,
 			GroupID: groupID,
 		},
-		tls:          tlsEnv,
 		trustedProxy: trustedProxy,
 		noAuth:       noAuth,
 	}, nil
-}
-
-func redirect(w http.ResponseWriter, req *http.Request) {
-	target := "https://" + req.Host + req.RequestURI
-
-	http.Redirect(w, req, target, http.StatusMovedPermanently)
 }
