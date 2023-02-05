@@ -63,18 +63,17 @@ func run(logger *zap.Logger) error {
 		if err != nil {
 			return err
 		}
-		bot := telegram.NewBot(ctx, botAPI, db)
+		bot := telegram.NewBot(ctx, botAPI, db, config.Telegram.AdminID, config.Telegram.GroupID, config.Telegram.InviteLink)
 		SendFunc = bot.GetSendFunc()
-		if config.Telegram.AdminID != nil {
-			logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-				if entry.Level < zapcore.WarnLevel {
-					return nil
-				}
-				msg := tgbotapi.NewMessage(*config.Telegram.AdminID, fmt.Sprintf("%s: %s (%s)", entry.Level, entry.Message, entry.Caller))
-				SendFunc(msg)
+		logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
+			if entry.Level < zapcore.WarnLevel {
 				return nil
-			}))
-		}
+			}
+			msg := tgbotapi.NewMessage(config.Telegram.AdminID, fmt.Sprintf("%s: %s (%s)", entry.Level, entry.Message, entry.Caller))
+			SendFunc(msg)
+			return nil
+		}))
+
 		bot.SetLogger(logger.Named("telegram"))
 		bot.Start()
 	}
@@ -119,7 +118,7 @@ func run(logger *zap.Logger) error {
 	mainGroup.Use(middleware.ProfileRedirectMiddleware())
 
 	// Views
-	viewsModule := views.NewViews(db, logger.Named("views"), SendFunc)
+	viewsModule := views.NewViews(db, logger.Named("views"), SendFunc, config.Telegram.AdminID, config.Telegram.GroupID)
 	viewsModule.RegisterRoutes(mainGroup)
 	viewsModule.RegisterLogin(loginGroup)
 	viewsModule.RegisterProfile(profileGroup)
@@ -164,14 +163,13 @@ type Config struct {
 		OnlyMakeMigrations bool
 	}
 	Telegram struct {
-		Token   string
-		AdminID *int64
-		GroupID *int64
+		Token      string
+		AdminID    int64
+		GroupID    int64
+		InviteLink string
 	}
-	tls          bool
 	trustedProxy string
 	noAuth       bool
-	domain       string
 }
 
 func loadConfig() (*Config, error) {
@@ -195,21 +193,15 @@ func loadConfig() (*Config, error) {
 	noAuth := os.Getenv("NO_AUTH") == "true"
 	trustedProxy := os.Getenv("TRUSTED_PROXY")
 
-	var adminID, groupID *int64
-	if strVal := os.Getenv("ADMIN_ID"); strVal != "" {
-		val, err := strconv.ParseInt(strVal, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		adminID = &val
+	adminID, err := strconv.ParseInt(os.Getenv("ADMIN_ID"), 10, 64)
+	if err != nil {
+		return nil, err
 	}
-	if strVal := os.Getenv("GROUP_ID"); strVal != "" {
-		val, err := strconv.ParseInt(strVal, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		groupID = &val
+	groupID, err := strconv.ParseInt(os.Getenv("GROUP_ID"), 10, 64)
+	if err != nil {
+		return nil, err
 	}
+	inviteLink := os.Getenv("INVITE_LINK")
 
 	if dbHost == "" {
 		dbHost = "localhost"
@@ -238,13 +230,15 @@ func loadConfig() (*Config, error) {
 			OnlyMakeMigrations: onlyMakeMigrations,
 		},
 		Telegram: struct {
-			Token   string
-			AdminID *int64
-			GroupID *int64
+			Token      string
+			AdminID    int64
+			GroupID    int64
+			InviteLink string
 		}{
-			Token:   botToken,
-			AdminID: adminID,
-			GroupID: groupID,
+			Token:      botToken,
+			AdminID:    adminID,
+			GroupID:    groupID,
+			InviteLink: inviteLink,
 		},
 		trustedProxy: trustedProxy,
 		noAuth:       noAuth,

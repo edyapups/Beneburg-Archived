@@ -5,6 +5,7 @@ import (
 	"beneburg/pkg/database/model"
 	"beneburg/pkg/telegram"
 	"beneburg/pkg/utils"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
@@ -21,9 +22,12 @@ type Views interface {
 var _ Views = &views{}
 
 type views struct {
-	db        database.Database
-	logger    *zap.Logger
-	sendToBot telegram.TelegramBotSendFunc
+	db              database.Database
+	logger          *zap.Logger
+	sendToBot       telegram.TelegramBotSendFunc
+	templator       telegram.Templator
+	adminTelegramID int64
+	groupTelegramID int64
 }
 
 func (v views) RegisterRoutes(router gin.IRouter) {
@@ -40,21 +44,25 @@ func (v views) RegisterLogin(router gin.IRouter) {
 	router.GET("/:token", v.login)
 }
 
-func NewViews(db database.Database, logger *zap.Logger, sendFunc telegram.TelegramBotSendFunc) Views {
+func NewViews(db database.Database, logger *zap.Logger, sendFunc telegram.TelegramBotSendFunc, adminTelegramID int64, groupTelegramID int64) Views {
 	return &views{
-		db:        db,
-		logger:    logger,
-		sendToBot: sendFunc,
+		db:              db,
+		logger:          logger,
+		sendToBot:       sendFunc,
+		templator:       telegram.NewTemplator(),
+		adminTelegramID: adminTelegramID,
+		groupTelegramID: groupTelegramID,
 	}
 }
 
 func (v views) index(g *gin.Context) {
-	user := g.MustGet("currentUser").(*model.User)
-	g.HTML(200, "index.gohtml", gin.H{
-		"title": "Главная",
-		"page":  "index",
-		"user":  user,
-	})
+	_ = g.MustGet("currentUser").(*model.User)
+	g.Redirect(301, "/profile")
+	//g.HTML(200, "index.gohtml", gin.H{
+	//	"title": "Главная",
+	//	"page":  "index",
+	//	"user":  user,
+	//})
 }
 
 func (v views) login(g *gin.Context) {
@@ -136,7 +144,16 @@ func (v views) profileForm(g *gin.Context) {
 	if err != nil {
 		v.logger.Named("profileForm").Error("Error creating form", zap.Error(err))
 	}
-	message := tgbotapi.NewMessage(user.TelegramID, "Мы получили вашу анкету, ожидайте ответа!")
+	message := tgbotapi.NewMessage(user.TelegramID, v.templator.FormReceived())
 	v.sendToBot(message)
+
+	adminMessageText := fmt.Sprintf("Новая анкета:\n\n%s\n\n%s", v.templator.FormInfo(form), v.templator.UserIdWithHref(user))
+	adminMessage := tgbotapi.NewMessage(v.adminTelegramID, adminMessageText)
+	adminMessage.ParseMode = "HTML"
+	acceptionButton := tgbotapi.NewInlineKeyboardButtonData("Принять", fmt.Sprintf("admin:form:accept:%d", form.ID))
+	rejectionButton := tgbotapi.NewInlineKeyboardButtonData("Отклонить", fmt.Sprintf("admin:form:reject:%d", form.ID))
+	adminMessage.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(acceptionButton, rejectionButton))
+	v.sendToBot(adminMessage)
+
 	g.Redirect(http.StatusFound, "/profile")
 }

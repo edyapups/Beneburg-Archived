@@ -27,8 +27,12 @@ type Database interface {
 	GetUserByID(ctx context.Context, id uint) (*model.User, error)
 	GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.User, error)
 	UpdateUserByID(ctx context.Context, id uint, user *model.User) (*model.User, error)
+	AcceptUser(ctx context.Context, id uint) (*gen.ResultInfo, error)
+	RejectUser(ctx context.Context, id uint) (*gen.ResultInfo, error)
+	SetUserStatus(ctx context.Context, id uint, status string) (*gen.ResultInfo, error)
 
 	CreateForm(ctx context.Context, form *model.Form) (*model.Form, error)
+	GetFormByID(ctx context.Context, id uint) (*model.Form, error)
 	AcceptForm(ctx context.Context, id uint) (*gen.ResultInfo, error)
 	RejectForm(ctx context.Context, id uint) (*gen.ResultInfo, error)
 	GetActualForm(ctx context.Context, telegramID int64) (*model.Form, error)
@@ -176,6 +180,31 @@ func (d database) UpdateUserByID(ctx context.Context, id uint, user *model.User)
 	return user, nil
 }
 
+func (d database) AcceptUser(ctx context.Context, id uint) (*gen.ResultInfo, error) {
+	u := query.Use(d.db).User
+	result, err := u.WithContext(ctx).Where(u.ID.Eq(id)).Update(u.Status, model.UserStatusAccepted)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+func (d database) RejectUser(ctx context.Context, id uint) (*gen.ResultInfo, error) {
+	u := query.Use(d.db).User
+	result, err := u.WithContext(ctx).Where(u.ID.Eq(id)).Update(u.Status, model.UserStatusRejected)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+func (d database) SetUserStatus(ctx context.Context, id uint, status string) (*gen.ResultInfo, error) {
+	u := query.Use(d.db).User
+	result, err := u.WithContext(ctx).Where(u.ID.Eq(id)).Update(u.Status, status)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 func (d database) CreateForm(ctx context.Context, form *model.Form) (*model.Form, error) {
 	f := query.Use(d.db).Form
 	err := f.WithContext(ctx).Create(form)
@@ -183,6 +212,16 @@ func (d database) CreateForm(ctx context.Context, form *model.Form) (*model.Form
 		return nil, err
 	}
 	return form, nil
+}
+
+func (d database) GetFormByID(ctx context.Context, id uint) (*model.Form, error) {
+	f := query.Use(d.db).Form
+	first, err := f.WithContext(ctx).Where(f.ID.Eq(id)).First()
+	if err != nil {
+		return nil, err
+	}
+
+	return first, nil
 }
 
 func (d database) AcceptForm(ctx context.Context, id uint) (*gen.ResultInfo, error) {

@@ -173,6 +173,51 @@ func (mr *MockDatabaseMockRecorder) UpdateUserByID(ctx, id, user interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserByID", reflect.TypeOf((*MockDatabase)(nil).UpdateUserByID), ctx, id, user)
 }
 
+// AcceptUser mocks base method
+func (m *MockDatabase) AcceptUser(ctx context.Context, id uint) (*gen.ResultInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AcceptUser", ctx, id)
+	ret0, _ := ret[0].(*gen.ResultInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AcceptUser indicates an expected call of AcceptUser
+func (mr *MockDatabaseMockRecorder) AcceptUser(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptUser", reflect.TypeOf((*MockDatabase)(nil).AcceptUser), ctx, id)
+}
+
+// RejectUser mocks base method
+func (m *MockDatabase) RejectUser(ctx context.Context, id uint) (*gen.ResultInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RejectUser", ctx, id)
+	ret0, _ := ret[0].(*gen.ResultInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RejectUser indicates an expected call of RejectUser
+func (mr *MockDatabaseMockRecorder) RejectUser(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RejectUser", reflect.TypeOf((*MockDatabase)(nil).RejectUser), ctx, id)
+}
+
+// SetUserStatus mocks base method
+func (m *MockDatabase) SetUserStatus(ctx context.Context, id uint, status string) (*gen.ResultInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetUserStatus", ctx, id, status)
+	ret0, _ := ret[0].(*gen.ResultInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetUserStatus indicates an expected call of SetUserStatus
+func (mr *MockDatabaseMockRecorder) SetUserStatus(ctx, id, status interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUserStatus", reflect.TypeOf((*MockDatabase)(nil).SetUserStatus), ctx, id, status)
+}
+
 // CreateForm mocks base method
 func (m *MockDatabase) CreateForm(ctx context.Context, form *model.Form) (*model.Form, error) {
 	m.ctrl.T.Helper()
@@ -186,6 +231,21 @@ func (m *MockDatabase) CreateForm(ctx context.Context, form *model.Form) (*model
 func (mr *MockDatabaseMockRecorder) CreateForm(ctx, form interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateForm", reflect.TypeOf((*MockDatabase)(nil).CreateForm), ctx, form)
+}
+
+// GetFormByID mocks base method
+func (m *MockDatabase) GetFormByID(ctx context.Context, id uint) (*model.Form, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFormByID", ctx, id)
+	ret0, _ := ret[0].(*model.Form)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFormByID indicates an expected call of GetFormByID
+func (mr *MockDatabaseMockRecorder) GetFormByID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFormByID", reflect.TypeOf((*MockDatabase)(nil).GetFormByID), ctx, id)
 }
 
 // AcceptForm mocks base method

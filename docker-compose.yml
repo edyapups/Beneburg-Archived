@@ -35,6 +35,7 @@ services:
       - TRUSTED_PROXY
       - ADMIN_ID
       - GROUP_ID
+      - INVITE_LINK
     build:
         context: .
         dockerfile: "deploy/server/${DOCKER_FILE:-deploy}.Dockerfile"
