@@ -93,6 +93,7 @@ func run(logger *zap.Logger) error {
 			return err
 		}
 	}
+	router.TrustedPlatform = "X-Real-IP"
 	router.Static("/assets", "./assets")
 	router.LoadHTMLGlob("templates/*")
 	router.Use(cors.Default())
