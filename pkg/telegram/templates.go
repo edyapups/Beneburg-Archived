@@ -88,7 +88,14 @@ func (t templator) NewFormMessage(user *model.User, form *model.Form) string {
 }
 
 func (t templator) StartCommandReply() string {
-	return "Привет! Я бот, который поможет тебе отправить анкетку в чат.\nНапиши мне /login, чтобы получить ссылку для входа на сайт."
+	stringBuilder := strings.Builder{}
+	stringBuilder.WriteString("Привет! Я бот, который поможет тебе отправить анкетку в чат.\n")
+	stringBuilder.WriteString("Напиши мне /login, чтобы получить ссылку для входа на сайт.")
+	AddDelimiter(&stringBuilder)
+	stringBuilder.WriteString(fmt.Sprintf("<i>%s</i>", "(бот находится в ранней стадии разработки, возможны ошибки, если столкнёшься с ними, напиши "))
+	stringBuilder.WriteString(fmt.Sprintf("<a href=\"%s\">сюда</a>", "https://t.me/edyapups"))
+	stringBuilder.WriteString(fmt.Sprintf("<i>%s</i>", ")"))
+	return stringBuilder.String()
 }
 
 func (t templator) LoginCommandReply(token *model.Token) string {

@@ -283,6 +283,8 @@ func (b *botManager) processStartCommand(message *tgbotapi.Message) {
 		return
 	}
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.StartCommandReply())
+	msg.ParseMode = tgbotapi.ModeHTML
+	msg.DisableWebPagePreview = true
 	b.send(msg)
 }
 
