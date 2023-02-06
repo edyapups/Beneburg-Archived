@@ -64,14 +64,14 @@ func (v views) index(g *gin.Context) {
 	//g.HTML(200, "index.gohtml", gin.H{
 	//	"title": "Главная",
 	//	"page":  "index",
-	//	"user":  user,
+	//	"forms": forms,
 	//})
 }
 
 func (v views) login(g *gin.Context) {
 	token := g.Param("token")
 	if token == "" {
-		g.Redirect(301, "https://t.me/BeneburgBot")
+		g.Redirect(302, "https://t.me/BeneburgBot")
 		return
 	}
 	g.SetCookie("token", token, 60*60*24, "/", "", false, true)
