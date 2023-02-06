@@ -82,7 +82,14 @@ func (t templator) NewFormPoll() string {
 
 func (t templator) NewFormMessage(user *model.User, form *model.Form) string {
 	stringBuilder := strings.Builder{}
-	stringBuilder.WriteString("<b>Новая анкета!</b>")
+	if user.Status == model.UserStatusActive {
+		stringBuilder.WriteString("<b>")
+		stringBuilder.WriteString(fmt.Sprintf("<a href=\"tg://user?id=%d\">Участник</a> ", user.TelegramID))
+		stringBuilder.WriteString("изменил анкету:")
+		stringBuilder.WriteString("</b>")
+	} else {
+		stringBuilder.WriteString("<b>Новая анкета!</b>")
+	}
 
 	AddDelimiter(&stringBuilder)
 	stringBuilder.WriteString(t.FormInfo(form))
@@ -136,36 +143,36 @@ func (t templator) UserIdWithHref(user *model.User) string {
 
 func (t templator) FormInfo(form *model.Form) string {
 	stringBuilder := strings.Builder{}
-	stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserNameDescription, form.Name))
+	stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserNameDescription, html.EscapeString(form.Name)))
 	if form.Age != nil {
 		AddDelimiter(&stringBuilder)
 		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%d", model.UserAgeDescription, *form.Age))
 	}
 	AddDelimiter(&stringBuilder)
-	stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserGenderDescription, form.Gender))
-	if form.About != nil {
+	stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserGenderDescription, html.EscapeString(form.Gender)))
+	if form.About != nil && *form.About != "" {
 		AddDelimiter(&stringBuilder)
-		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserAboutDescription, *form.About))
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserAboutDescription, html.EscapeString(*form.About)))
 	}
-	if form.Hobbies != nil {
+	if form.Hobbies != nil && *form.Hobbies != "" {
 		AddDelimiter(&stringBuilder)
-		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserHobbiesDescription, *form.Hobbies))
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserHobbiesDescription, html.EscapeString(*form.Hobbies)))
 	}
-	if form.Work != nil {
+	if form.Work != nil && *form.Work != "" {
 		AddDelimiter(&stringBuilder)
-		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserWorkDescription, *form.Work))
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserWorkDescription, html.EscapeString(*form.Work)))
 	}
-	if form.Education != nil {
+	if form.Education != nil && *form.Education != "" {
 		AddDelimiter(&stringBuilder)
-		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserEducationDescription, *form.Education))
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserEducationDescription, html.EscapeString(*form.Education)))
 	}
-	if form.CoverLetter != nil {
+	if form.CoverLetter != nil && *form.CoverLetter != "" {
 		AddDelimiter(&stringBuilder)
-		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserCoverLetterDescription, *form.CoverLetter))
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserCoverLetterDescription, html.EscapeString(*form.CoverLetter)))
 	}
-	if form.Contacts != nil {
+	if form.Contacts != nil && *form.Contacts != "" {
 		AddDelimiter(&stringBuilder)
-		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserContactsDescription, *form.Contacts))
+		stringBuilder.WriteString(fmt.Sprintf("<b>%s</b>:\n%s", model.UserContactsDescription, html.EscapeString(*form.Contacts)))
 	}
 	return stringBuilder.String()
 }

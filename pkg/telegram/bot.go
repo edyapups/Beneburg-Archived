@@ -81,7 +81,7 @@ func (b *botManager) startGettingUpdates() {
 			Offset:  offset,
 			Timeout: 60,
 		})
-		b.logger.Named("startGettingUpdates").Debug("Got updates", zap.Any("updates", updates))
+		b.logger.Named("startGettingUpdates").Debug("Got updates", zap.Int("updates_count", len(updates)))
 		if err != nil {
 			b.logger.Error("Error while getting bot updates", zap.Error(err))
 			b.logger.Info("Sleeping for 3 seconds...")
@@ -141,13 +141,16 @@ func (b *botManager) processUpdate(update tgbotapi.Update) {
 	b.logger.Named("processUpdate").Info("Processing update", zap.Int("update_id", update.UpdateID))
 	if update.Message != nil {
 		b.processMessage(update.Message)
+		return
 	}
 	b.logger.Named("processUpdate").Info("Processing update, not message", zap.Any("update", update))
 	if update.CallbackQuery != nil {
 		b.processCallbackQuery(update.CallbackQuery)
+		return
 	}
 	if update.ChatJoinRequest != nil {
 		b.processChatJoinRequest(update.ChatJoinRequest)
+		return
 	}
 }
 
@@ -440,9 +443,13 @@ func (b *botManager) sendNewFormToGroup(user *model.User, form *model.Form) {
 	// TODO: make a request in goroutine with returning value
 	sentMessage, err := b.bot.Send(msg)
 	if err != nil {
+		b.logger.Named("sendNewFormToGroup").Error("Error while sending new form to group", zap.Error(err))
 		return
 	}
-
+	if user.Status == model.UserStatusActive {
+		b.logger.Named("sendNewFormToGroup").Debug("User is not new, skipping poll")
+		return
+	}
 	poll := tgbotapi.NewPoll(b.groupID, b.templator.NewFormPoll(), "Принимаем", "Отклоняем")
 	poll.ReplyToMessageID = sentMessage.MessageID
 	acceptUser := tgbotapi.NewInlineKeyboardButtonData("Принять (для Эди)", fmt.Sprintf("admin:user:accept:%d", user.TelegramID))
