@@ -72,9 +72,16 @@ func (d database) CreateUser(ctx context.Context, user *model.User) (*model.User
 func (d database) UpdateOrCreateUser(ctx context.Context, user *model.User) (*model.User, error) {
 	q := query.Use(d.db)
 	u := q.User
+	var doUpdates []string
+	if user.Username != nil {
+		doUpdates = append(doUpdates, "username")
+	}
+	if user.Status == model.UserStatusActive || user.Status == model.UserStatusNotActive {
+		doUpdates = append(doUpdates, "status")
+	}
 	err := u.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "telegram_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"username"}),
+		DoUpdates: clause.AssignmentColumns(doUpdates),
 	}).Create(user)
 	if err != nil {
 		return nil, err

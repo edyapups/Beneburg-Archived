@@ -56,8 +56,11 @@ func NewViews(db database.Database, logger *zap.Logger, sendFunc telegram.Telegr
 }
 
 func (v views) index(g *gin.Context) {
-	_ = g.MustGet("currentUser").(*model.User)
-	g.Redirect(301, "/profile")
+	g.Redirect(302, "/profile")
+	//forms, _ := v.db.GetAllAcceptedFormsWithUser(g)
+	//if forms == nil {
+	//	forms = []*model.Form{}
+	//}
 	//g.HTML(200, "index.gohtml", gin.H{
 	//	"title": "Главная",
 	//	"page":  "index",

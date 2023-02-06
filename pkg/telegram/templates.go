@@ -25,11 +25,16 @@ type Templator interface {
 	AcceptUserReply(link string) string
 	AcceptUserGroupReply() string
 	RejectUserGroupReply() string
+	NewChatMember() string
 }
 
 var _ Templator = templator{}
 
 type templator struct {
+}
+
+func (t templator) NewChatMember() string {
+	return "Привет! Добро пожаловать! 🎉"
 }
 
 func (t templator) RejectUserGroupReply() string {

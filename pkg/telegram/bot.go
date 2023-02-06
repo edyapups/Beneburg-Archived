@@ -139,10 +139,10 @@ func (b *botManager) send(message tgbotapi.Chattable) {
 
 func (b *botManager) processUpdate(update tgbotapi.Update) {
 	b.logger.Named("processUpdate").Info("Processing update", zap.Int("update_id", update.UpdateID))
-	b.logger.Named("processUpdate").Debug("Update", zap.Any("update", update))
 	if update.Message != nil {
 		b.processMessage(update.Message)
 	}
+	b.logger.Named("processUpdate").Info("Processing update, not message", zap.Any("update", update))
 	if update.CallbackQuery != nil {
 		b.processCallbackQuery(update.CallbackQuery)
 	}
@@ -152,8 +152,9 @@ func (b *botManager) processUpdate(update tgbotapi.Update) {
 }
 
 func (b *botManager) processMessage(message *tgbotapi.Message) {
-	b.logger.Named("processMessage").Debug("Processing message", zap.Any("message", message))
+	b.logger.Named("processMessage").Debug("Processing message", zap.String("chat_title", message.Chat.Title))
 	if from := message.From; from != nil && !from.IsBot {
+		b.logger.Named("processMessage").Debug("Processing message from user", zap.String("username", from.UserName), zap.String("first_name", from.FirstName), zap.String("last_name", from.LastName))
 		user := model.User{
 			TelegramID: from.ID,
 			Username: func() *string {
@@ -162,6 +163,12 @@ func (b *botManager) processMessage(message *tgbotapi.Message) {
 				} else {
 					return nil
 				}
+			}(),
+			Status: func() string {
+				if message.Chat != nil && message.Chat.ID == b.groupID {
+					return model.UserStatusActive
+				}
+				return model.UserStatusNew
 			}(),
 		}
 		_, err := b.db.UpdateOrCreateUser(b.ctx, &user)
@@ -181,7 +188,7 @@ func (b *botManager) processMessage(message *tgbotapi.Message) {
 	}
 }
 func (b *botManager) processPrivateMessage(message *tgbotapi.Message) {
-	b.logger.Named("processPrivateMessage").Debug("Processing private message", zap.Any("message", message))
+	b.logger.Named("processPrivateMessage").Debug("Processing private message")
 	if message.IsCommand() {
 		b.processPrivateCommand(message)
 		return
@@ -194,8 +201,18 @@ func (b *botManager) processPrivateMessage(message *tgbotapi.Message) {
 }
 
 func (b *botManager) processGroupMessage(message *tgbotapi.Message) {
+	b.logger.Named("processGroupMessage").Debug("Processing group message")
 	if message.IsCommand() {
 		b.processGroupCommand(message)
+		return
+	}
+	if message.NewChatMembers != nil {
+		b.processNewChatMembers(message)
+		return
+	}
+
+	if message.LeftChatMember != nil {
+		b.processLeftChatMember(message)
 		return
 	}
 
@@ -206,6 +223,7 @@ func (b *botManager) processGroupMessage(message *tgbotapi.Message) {
 }
 
 func (b *botManager) processGroupCommand(message *tgbotapi.Message) {
+	b.logger.Named("processGroupCommand").Debug("Processing group command", zap.String("command", message.Command()))
 	if message.Command() == "info" {
 		b.processInfoCommand(message)
 		return
@@ -213,12 +231,12 @@ func (b *botManager) processGroupCommand(message *tgbotapi.Message) {
 }
 
 func (b *botManager) processPing(message *tgbotapi.Message) {
-	b.logger.Named("processPing").Debug("Processing ping", zap.Any("message", message))
+	b.logger.Named("processPing").Debug("Processing ping")
 	b.send(tgbotapi.NewMessage(message.Chat.ID, "pong"))
 }
 
 func (b *botManager) processPrivateCommand(message *tgbotapi.Message) {
-	b.logger.Named("processPrivateCommand").Debug("Processing private command", zap.Any("message", message))
+	b.logger.Named("processPrivateCommand").Debug("Processing private command", zap.String("command", message.Command()))
 	if message.Command() == "start" {
 		b.processStartCommand(message)
 		return
@@ -230,7 +248,9 @@ func (b *botManager) processPrivateCommand(message *tgbotapi.Message) {
 }
 
 func (b *botManager) processInfoCommand(message *tgbotapi.Message) {
+	b.logger.Named("processInfoCommand").Debug("Processing info command")
 	if message.ReplyToMessage == nil || message.ReplyToMessage.From == nil {
+		b.logger.Named("processInfoCommand").Debug("No reply to message")
 		b.send(tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandNoReply()))
 		return
 	}
@@ -244,6 +264,7 @@ func (b *botManager) processInfoCommand(message *tgbotapi.Message) {
 		b.logger.Named("processInfoCommand").Error("Error while getting user from db", zap.Error(err))
 		return
 	}
+	b.logger.Named("processInfoCommand").Debug("User found", zap.Stringp("username", user.Username), zap.Int64("telegram_id", user.TelegramID))
 	form, err := b.db.GetActualForm(b.ctx, user.TelegramID)
 	if err != nil {
 		if errors.As(err, &noRecordError) {
@@ -254,13 +275,14 @@ func (b *botManager) processInfoCommand(message *tgbotapi.Message) {
 		b.logger.Named("processInfoCommand").Error("Error while getting user's form from db", zap.Error(err))
 		return
 	}
+	b.logger.Named("processInfoCommand").Debug("Form found", zap.String("name", form.Name))
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.InfoCommandReply(user, form))
 	msg.ParseMode = tgbotapi.ModeHTML
 	b.send(msg)
 }
 
 func (b *botManager) processLoginCommand(message *tgbotapi.Message) {
-	b.logger.Named("processLoginCommand").Debug("Processing login command", zap.Any("message", message))
+	b.logger.Named("processLoginCommand").Debug("Processing login command")
 	if message.From == nil {
 		b.logger.Named("processLoginCommand").Error("Message's From is nil")
 		return
@@ -270,14 +292,14 @@ func (b *botManager) processLoginCommand(message *tgbotapi.Message) {
 		b.logger.Named("processLoginCommand").Error("Error while creating token", zap.Error(err))
 		return
 	}
-	b.logger.Named("processLoginCommand").Debug("Token created", zap.Any("token", token))
+	b.logger.Named("processLoginCommand").Debug("Token created")
 	msg := tgbotapi.NewMessage(message.Chat.ID, b.templator.LoginCommandReply(token))
 	msg.ParseMode = tgbotapi.ModeHTML
 	b.send(msg)
 }
 
 func (b *botManager) processStartCommand(message *tgbotapi.Message) {
-	b.logger.Named("processStartCommand").Debug("Processing start command", zap.Any("message", message))
+	b.logger.Named("processStartCommand").Debug("Processing start command")
 	if message.From == nil {
 		b.logger.Named("processStartCommand").Error("Message's From is nil")
 		return
@@ -289,7 +311,7 @@ func (b *botManager) processStartCommand(message *tgbotapi.Message) {
 }
 
 func (b *botManager) processCallbackQuery(query *tgbotapi.CallbackQuery) {
-	b.logger.Named("processCallbackQuery").Debug("Processing callback query", zap.Any("query", query))
+	b.logger.Named("processCallbackQuery").Debug("Processing callback query", zap.String("data", query.Data))
 	if query.Message == nil {
 		b.logger.Named("processCallbackQuery").Error("Callback query's message is nil")
 		return
@@ -422,6 +444,7 @@ func (b *botManager) sendNewFormToGroup(user *model.User, form *model.Form) {
 }
 
 func (b *botManager) processUserCallbackQuery(chatID int64, messageID int, queryData string) {
+	b.logger.Named("processUserCallbackQuery").Debug("Processing user callback query", zap.Int64("chatID", chatID), zap.Int("messageID", messageID), zap.String("queryData", queryData))
 	var err error
 	var data string
 	_, err = fmt.Sscanf(queryData, "user:%s", &data)
@@ -458,6 +481,7 @@ func (b *botManager) processUserCallbackQuery(chatID int64, messageID int, query
 
 	switch command {
 	case "accept":
+		b.logger.Named("processUserCallbackQuery").Debug("Accepting user", zap.Int64("userTelegramID", user.TelegramID))
 		_, err := b.db.AcceptUser(b.ctx, user.ID)
 		if err != nil {
 			b.logger.Named("processUserCallbackQuery").Error("Error while accepting user", zap.Error(err))
@@ -473,6 +497,7 @@ func (b *botManager) processUserCallbackQuery(chatID int64, messageID int, query
 		b.send(acceptGroupMsg)
 
 	case "reject":
+		b.logger.Named("processUserCallbackQuery").Debug("Rejecting user", zap.Int64("userTelegramID", user.TelegramID))
 		_, err := b.db.RejectUser(b.ctx, user.ID)
 		if err != nil {
 			b.logger.Named("processUserCallbackQuery").Error("Error while rejecting user", zap.Error(err))
@@ -489,7 +514,7 @@ func (b *botManager) processUserCallbackQuery(chatID int64, messageID int, query
 }
 
 func (b *botManager) processChatJoinRequest(request *tgbotapi.ChatJoinRequest) {
-	b.logger.Named("processChatJoinRequest").Debug("Processing chat join request", zap.Any("request", request))
+	b.logger.Named("processChatJoinRequest").Debug("Processing chat join request")
 	user, err := b.db.GetUserByTelegramID(b.ctx, request.From.ID)
 	if err != nil {
 		if errors.As(err, &noRecordError) {
@@ -508,6 +533,7 @@ func (b *botManager) processChatJoinRequest(request *tgbotapi.ChatJoinRequest) {
 	}
 	switch user.Status {
 	case model.UserStatusActive, model.UserStatusAccepted, model.UserStatusNotActive:
+		b.logger.Named("processChatJoinRequest").Debug("User accepted")
 		acceptRequest := tgbotapi.ApproveChatJoinRequestConfig{
 			ChatConfig: tgbotapi.ChatConfig{
 				ChatID: request.Chat.ID,
@@ -518,6 +544,7 @@ func (b *botManager) processChatJoinRequest(request *tgbotapi.ChatJoinRequest) {
 		adminMsg := tgbotapi.NewMessage(b.adminID, fmt.Sprintf("Принял пользователя %v", request.From))
 		b.send(adminMsg)
 	default:
+		b.logger.Named("processChatJoinRequest").Debug("User rejected")
 		rejectRequest := tgbotapi.DeclineChatJoinRequest{
 			ChatConfig: tgbotapi.ChatConfig{
 				ChatID: request.Chat.ID,
@@ -527,5 +554,38 @@ func (b *botManager) processChatJoinRequest(request *tgbotapi.ChatJoinRequest) {
 		b.send(rejectRequest)
 		adminMsg := tgbotapi.NewMessage(b.adminID, fmt.Sprintf("Отклонил пользователя %v", request.From))
 		b.send(adminMsg)
+	}
+}
+
+func (b *botManager) processNewChatMembers(message *tgbotapi.Message) {
+	b.logger.Named("processNewChatMembers").Debug("Processing new chat members")
+	for _, user := range message.NewChatMembers {
+		_, err := b.db.UpdateOrCreateUser(b.ctx, &model.User{
+			TelegramID: user.ID,
+			Status:     model.UserStatusActive,
+		})
+		if err != nil {
+			b.logger.Named("processNewChatMembers").Error("Error while updating user", zap.Error(err))
+			return
+		}
+	}
+	if len(message.NewChatMembers) > 1 {
+		b.logger.Named("processNewChatMembers").Debug("More than one user joined")
+		return
+	}
+	msg := tgbotapi.NewMessage(b.groupID, b.templator.NewChatMember())
+	msg.ReplyToMessageID = message.MessageID
+	b.send(msg)
+}
+
+func (b *botManager) processLeftChatMember(message *tgbotapi.Message) {
+	b.logger.Named("processLeftChatMember").Debug("Processing left chat member")
+	_, err := b.db.UpdateOrCreateUser(b.ctx, &model.User{
+		TelegramID: message.LeftChatMember.ID,
+		Status:     model.UserStatusNotActive,
+	})
+	if err != nil {
+		b.logger.Named("processLeftChatMember").Error("Error while updating user", zap.Error(err))
+		return
 	}
 }
