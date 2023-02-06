@@ -73,6 +73,12 @@ func (d database) UpdateOrCreateUser(ctx context.Context, user *model.User) (*mo
 	q := query.Use(d.db)
 	u := q.User
 	var doUpdates []string
+	if user.FirstName != "" {
+		doUpdates = append(doUpdates, "first_name")
+	}
+	if user.LastName != nil {
+		doUpdates = append(doUpdates, "last_name")
+	}
 	if user.Username != nil {
 		doUpdates = append(doUpdates, "username")
 	}

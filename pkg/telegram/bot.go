@@ -156,6 +156,14 @@ func (b *botManager) processMessage(message *tgbotapi.Message) {
 	if from := message.From; from != nil && !from.IsBot {
 		b.logger.Named("processMessage").Debug("Processing message from user", zap.String("username", from.UserName), zap.String("first_name", from.FirstName), zap.String("last_name", from.LastName))
 		user := model.User{
+			FirstName: from.FirstName,
+			LastName: func() *string {
+				if from.LastName != "" {
+					return &from.LastName
+				} else {
+					return nil
+				}
+			}(),
 			TelegramID: from.ID,
 			Username: func() *string {
 				if from.UserName != "" {

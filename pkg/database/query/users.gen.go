@@ -33,6 +33,8 @@ func newUser(db *gorm.DB) user {
 	_user.DeletedAt = field.NewField(tableName, "deleted_at")
 	_user.TelegramID = field.NewInt64(tableName, "telegram_id")
 	_user.Username = field.NewString(tableName, "username")
+	_user.FirstName = field.NewString(tableName, "first_name")
+	_user.LastName = field.NewString(tableName, "last_name")
 	_user.Status = field.NewString(tableName, "status")
 
 	_user.fillFieldMap()
@@ -50,6 +52,8 @@ type user struct {
 	DeletedAt  field.Field
 	TelegramID field.Int64
 	Username   field.String
+	FirstName  field.String
+	LastName   field.String
 	Status     field.String
 
 	fieldMap map[string]field.Expr
@@ -73,6 +77,8 @@ func (u *user) updateTableName(table string) *user {
 	u.DeletedAt = field.NewField(table, "deleted_at")
 	u.TelegramID = field.NewInt64(table, "telegram_id")
 	u.Username = field.NewString(table, "username")
+	u.FirstName = field.NewString(table, "first_name")
+	u.LastName = field.NewString(table, "last_name")
 	u.Status = field.NewString(table, "status")
 
 	u.fillFieldMap()
@@ -96,13 +102,15 @@ func (u *user) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (u *user) fillFieldMap() {
-	u.fieldMap = make(map[string]field.Expr, 7)
+	u.fieldMap = make(map[string]field.Expr, 9)
 	u.fieldMap["id"] = u.ID
 	u.fieldMap["created_at"] = u.CreatedAt
 	u.fieldMap["updated_at"] = u.UpdatedAt
 	u.fieldMap["deleted_at"] = u.DeletedAt
 	u.fieldMap["telegram_id"] = u.TelegramID
 	u.fieldMap["username"] = u.Username
+	u.fieldMap["first_name"] = u.FirstName
+	u.fieldMap["last_name"] = u.LastName
 	u.fieldMap["status"] = u.Status
 }
 
