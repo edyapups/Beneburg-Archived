@@ -1,1 +1,14 @@
-index {{ .data.user }}
+{{ template "header" .}}
+{{ template "navbar" .}}
+
+<div class="container my-4">
+    <div class="row row-cols-1 rowcols-sm-2 row-cols-md-3">
+        {{ range .users }}
+            <div class="col">
+                {{ template "userCard" .}}
+            </div>
+        {{end}}
+    </div>
+</div>
+
+{{ template "footer" .}}
