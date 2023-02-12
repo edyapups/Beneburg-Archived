@@ -36,6 +36,7 @@ services:
       - ADMIN_ID
       - GROUP_ID
       - INVITE_LINK
+      - DOMAIN
     build:
         context: .
         dockerfile: "deploy/server/${DOCKER_FILE:-deploy}.Dockerfile"

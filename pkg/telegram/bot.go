@@ -37,10 +37,10 @@ type botManager struct {
 	logger *zap.Logger
 }
 
-func NewBot(ctx context.Context, bot TgBotAPI, db database.Database, adminID int64, groupID int64, inviteLink string) Bot {
+func NewBot(ctx context.Context, bot TgBotAPI, db database.Database, adminID int64, groupID int64, inviteLink string, domain string) Bot {
 	return &botManager{
 		bot:          bot,
-		templator:    NewTemplator(),
+		templator:    NewTemplator(domain),
 		db:           db,
 		ctx:          ctx,
 		adminID:      adminID,
@@ -118,11 +118,12 @@ func (b *botManager) startProcessingMessages() {
 			_ = limiter.Wait(b.ctx)
 			_, err := b.bot.Request(message)
 			switch typedErr := err.(type) {
-			case tgbotapi.Error:
+			case *tgbotapi.Error:
+				b.logger.Named("startProcessingMessages").Error("Error while sending message", zap.Error(typedErr), zap.Any("message", message))
 				if typedErr.Code == 429 {
 					b.logger.Named("startProcessingMessages").Info("Too many requests, sleeping for 1 second")
-					b.messagesChan <- message
 					time.Sleep(time.Second)
+					b.messagesChan <- message
 				}
 			case nil:
 				continue

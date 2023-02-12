@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Views interface {
@@ -32,6 +33,7 @@ type views struct {
 
 func (v views) RegisterRoutes(router gin.IRouter) {
 	router.GET("/", v.index)
+	router.GET("/user/:user_telegram_id", v.user)
 }
 
 func (v views) RegisterProfile(router gin.IRouter) {
@@ -44,28 +46,27 @@ func (v views) RegisterLogin(router gin.IRouter) {
 	router.GET("/:token", v.login)
 }
 
-func NewViews(db database.Database, logger *zap.Logger, sendFunc telegram.TelegramBotSendFunc, adminTelegramID int64, groupTelegramID int64) Views {
+func NewViews(db database.Database, logger *zap.Logger, sendFunc telegram.TelegramBotSendFunc, adminTelegramID int64, groupTelegramID int64, domain string) Views {
 	return &views{
 		db:              db,
 		logger:          logger,
 		sendToBot:       sendFunc,
-		templator:       telegram.NewTemplator(),
+		templator:       telegram.NewTemplator(domain),
 		adminTelegramID: adminTelegramID,
 		groupTelegramID: groupTelegramID,
 	}
 }
 
 func (v views) index(g *gin.Context) {
-	g.Redirect(302, "/profile")
-	//forms, _ := v.db.GetAllAcceptedFormsWithUser(g)
-	//if forms == nil {
-	//	forms = []*model.Form{}
-	//}
-	//g.HTML(200, "index.gohtml", gin.H{
-	//	"title": "Главная",
-	//	"page":  "index",
-	//	"forms": forms,
-	//})
+	forms, _ := v.db.GetAllAcceptedFormsWithUser(g)
+	if forms == nil {
+		forms = []*model.Form{}
+	}
+	g.HTML(200, "index.gohtml", gin.H{
+		"title": "Главная",
+		"page":  "index",
+		"forms": forms,
+	})
 }
 
 func (v views) login(g *gin.Context) {
@@ -124,23 +125,23 @@ func (v views) profileForm(g *gin.Context) {
 		form.About = &aboutFormValue
 	}
 	hobbiesFormValue, ok := g.GetPostForm("hobbies")
-	if ok {
+	if ok && len(strings.TrimSpace(hobbiesFormValue)) > 0 {
 		form.Hobbies = &hobbiesFormValue
 	}
 	workFormValue, ok := g.GetPostForm("work")
-	if ok {
+	if ok && len(strings.TrimSpace(workFormValue)) > 0 {
 		form.Work = &workFormValue
 	}
 	educationFormValue, ok := g.GetPostForm("education")
-	if ok {
+	if ok && len(strings.TrimSpace(educationFormValue)) > 0 {
 		form.Education = &educationFormValue
 	}
 	coverLetterFormValue, ok := g.GetPostForm("cover_letter")
-	if ok {
+	if ok && len(strings.TrimSpace(coverLetterFormValue)) > 0 {
 		form.CoverLetter = &coverLetterFormValue
 	}
 	contactsFormValue, ok := g.GetPostForm("contacts")
-	if ok {
+	if ok && len(strings.TrimSpace(contactsFormValue)) > 0 {
 		form.Contacts = &contactsFormValue
 	}
 	_, err := v.db.CreateForm(g, form)
@@ -159,4 +160,20 @@ func (v views) profileForm(g *gin.Context) {
 	v.sendToBot(adminMessage)
 
 	g.Redirect(http.StatusFound, "/profile")
+}
+
+func (v views) user(g *gin.Context) {
+	userTelegramIdStr := g.Param("user_telegram_id")
+	var form *model.Form
+	userTelegramId, err := strconv.ParseInt(userTelegramIdStr, 10, 64)
+	if err == nil {
+		form, err = v.db.GetActualForm(g, userTelegramId)
+		_ = err
+	}
+	g.HTML(200, "user.gohtml", gin.H{
+		"title":          "Пользователь",
+		"page":           "user",
+		"form":           form,
+		"userTelegramId": userTelegramIdStr,
+	})
 }

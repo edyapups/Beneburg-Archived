@@ -2,7 +2,7 @@
     {{ if not (eq .user.Status "new") }}
         {{ template "navbar" .}}
     {{end}}
-<div class="container my-4">
+
     {{ if or (ne .form.Status "new") (.no_forms) }}
         <form method="post" action="/{{ .page }}/form">
             <div class="mb-3">
@@ -60,5 +60,4 @@
         <p>Спасибо! Анкета отправлена на рассмотрение, после обработки в бота придет сообщение.</p>
     </div>
     {{end}}
-</div>
 {{ template "footer" .}}

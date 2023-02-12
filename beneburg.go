@@ -63,7 +63,7 @@ func run(logger *zap.Logger) error {
 		if err != nil {
 			return err
 		}
-		bot := telegram.NewBot(ctx, botAPI, db, config.Telegram.AdminID, config.Telegram.GroupID, config.Telegram.InviteLink)
+		bot := telegram.NewBot(ctx, botAPI, db, config.Telegram.AdminID, config.Telegram.GroupID, config.Telegram.InviteLink, config.domain)
 		SendFunc = bot.GetSendFunc()
 		logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
 			if entry.Level < zapcore.WarnLevel {
@@ -119,7 +119,7 @@ func run(logger *zap.Logger) error {
 	mainGroup.Use(middleware.ProfileRedirectMiddleware())
 
 	// Views
-	viewsModule := views.NewViews(db, logger.Named("views"), SendFunc, config.Telegram.AdminID, config.Telegram.GroupID)
+	viewsModule := views.NewViews(db, logger.Named("views"), SendFunc, config.Telegram.AdminID, config.Telegram.GroupID, config.domain)
 	viewsModule.RegisterRoutes(mainGroup)
 	viewsModule.RegisterLogin(loginGroup)
 	viewsModule.RegisterProfile(profileGroup)
@@ -171,6 +171,7 @@ type Config struct {
 	}
 	trustedProxy string
 	noAuth       bool
+	domain       string
 }
 
 func loadConfig() (*Config, error) {
@@ -193,6 +194,7 @@ func loadConfig() (*Config, error) {
 	botToken := os.Getenv("BOT_TOKEN")
 	noAuth := os.Getenv("NO_AUTH") == "true"
 	trustedProxy := os.Getenv("TRUSTED_PROXY")
+	domain := os.Getenv("DOMAIN")
 
 	adminID, err := strconv.ParseInt(os.Getenv("ADMIN_ID"), 10, 64)
 	if err != nil {
@@ -243,5 +245,6 @@ func loadConfig() (*Config, error) {
 		},
 		trustedProxy: trustedProxy,
 		noAuth:       noAuth,
+		domain:       domain,
 	}, nil
 }

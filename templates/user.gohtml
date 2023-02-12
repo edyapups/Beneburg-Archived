@@ -1,7 +1,60 @@
 {{ template "header" .}}
 {{ template "navbar" .}}
 
-<div class="container my-4">
-</div>
+{{ with .form }}
+
+    <div class="text-dark-emphasis container" style="max-width: 70rem">
+        <div class="mb-4">
+            <h3>{{ .Name }} {{with .User.Username }}</h3>
+            <span class="badge bg-secondary fs-6 ">@{{.}}</span>{{end}}
+        </div>
+        <h4>Имя в ТГ: <span class="text-secondary">{{ .User.FirstName }}{{with .User.LastName}} {{.}}{{end}}</span></h4>
+
+        {{with .Gender}}
+        <div class="mb-3"><h4>Пол:</h4>
+            <span class="text-secondary h5">{{.}}</span>
+        </div>
+        {{end}}
+        {{with .Age}}
+        <div class="mb-3"><h4>Возраст:</h4>
+            <span class="text-secondary h5">{{.}}</span>
+        </div>
+        {{end}}
+        {{with .About}}
+        <div class="mb-3"><h4>О себе:</h4>
+            <span class="text-secondary h5">{{.}}</span>
+        </div>
+        {{end}}
+        {{with .Hobbies}}
+        <div class="mb-3"><h4>Хобби:</h4>
+            <span class="text-secondary h5">{{.}}</span>
+        </div>
+        {{end}}
+        {{with .Work}}
+        <div class="mb-3"><h4>Кем работает:</h4>
+            <span class="text-secondary h5">{{.}}</span>
+        </div>
+        {{end}}
+        {{with .Education}}
+        <div class="mb-3"><h4>Образование:</h4>
+            <span class="text-secondary h5">{{.}}</span>
+        </div>
+        {{end}}
+        {{with .CoverLetter}}
+        <div class="mb-3"><h4>Причина прихода в чатик:</h4>
+            <span class="text-secondary h5">{{.}}</span>
+        </div>
+        {{end}}
+        {{with .Contacts}}
+        <div class="mb-3"><h4>Контакты:</h4>
+            <span class="text-secondary h5">{{.}}</span>
+        </div>
+        {{end}}
+    </div>
+{{ else }}
+        <div class="alert alert-warning">
+            Пользователь с id {{ .userTelegramId }} не найден.
+        </div>
+{{end}}
 
 {{ template "footer" .}}

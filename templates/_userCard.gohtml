@@ -1,7 +1,36 @@
 {{ define "userCard" }}
-    <a class="card shadow-sm" href="/user/{{ .ID }}">
+    <div
+            class="card shadow-sm object-fit-fill h-100"
+            href="/user/{{ .UserTelegramId }}"
+            onmouseover="shadowOnMouseOver(this)"
+            onmouseout="shadowOnMouseOut(this)"
+            onclick="window.location.href='/user/{{ .UserTelegramId }}'"
+            style="cursor: pointer;"
+    >
+
         <div class="card-body">
-            .
+            <h5 class="card-title text-dark-emphasis">
+              {{ .Name }}
+                <span class="badge bg-secondary fs-6 ">
+                    {{ .Age }}
+                </span>
+            </h5>
+
+            <div class="card-text">
+                {{ with .About }}
+                    <p class="text-dark-emphasis" style="overflow: hidden;display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;">
+                            {{ . }}
+                    </p>
+                {{ end }}
+            </div>
         </div>
-    </a>
+    </div>
+    <script>
+        function shadowOnMouseOver(element) {
+            element.classList.replace("shadow-sm", "shadow");
+        }
+        function shadowOnMouseOut(element) {
+            element.classList.replace("shadow", "shadow-sm");
+        }
+    </script>
 {{ end }}

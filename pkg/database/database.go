@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gen"
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"time"
@@ -39,6 +40,7 @@ type Database interface {
 	GetLastForm(ctx context.Context, telegramID int64) (*model.Form, error)
 	GetAllUserForms(ctx context.Context, telegramID int64) ([]*model.Form, error)
 	GetAllForms(ctx context.Context) ([]*model.Form, error)
+	GetAllAcceptedFormsWithUser(ctx context.Context) ([]*model.Form, error)
 }
 
 var Models = []interface{}{model.User{}, model.Token{}, model.Form{}}
@@ -257,7 +259,7 @@ func (d database) RejectForm(ctx context.Context, id uint) (*gen.ResultInfo, err
 
 func (d database) GetActualForm(ctx context.Context, telegramID int64) (*model.Form, error) {
 	f := query.Use(d.db).Form
-	form, err := f.WithContext(ctx).Where(f.UserTelegramId.Eq(telegramID)).Where(f.Status.Eq(model.FormStatusAccepted)).Order(f.CreatedAt.Desc()).First()
+	form, err := f.WithContext(ctx).Preload(f.User).Where(f.UserTelegramId.Eq(telegramID)).Where(f.Status.Eq(model.FormStatusAccepted)).Order(f.CreatedAt.Desc()).First()
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +268,7 @@ func (d database) GetActualForm(ctx context.Context, telegramID int64) (*model.F
 
 func (d database) GetLastForm(ctx context.Context, telegramID int64) (*model.Form, error) {
 	f := query.Use(d.db).Form
-	form, err := f.WithContext(ctx).Where(f.UserTelegramId.Eq(telegramID)).Order(f.CreatedAt.Desc()).First()
+	form, err := f.WithContext(ctx).Preload(f.User).Where(f.UserTelegramId.Eq(telegramID)).Order(f.CreatedAt.Desc()).First()
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +277,7 @@ func (d database) GetLastForm(ctx context.Context, telegramID int64) (*model.For
 
 func (d database) GetAllUserForms(ctx context.Context, telegramID int64) ([]*model.Form, error) {
 	f := query.Use(d.db).Form
-	all, err := f.WithContext(ctx).Where(f.UserTelegramId.Eq(telegramID)).Find()
+	all, err := f.WithContext(ctx).Preload(f.User).Where(f.UserTelegramId.Eq(telegramID)).Find()
 	if err != nil {
 		return nil, err
 	}
@@ -289,6 +291,31 @@ func (d database) GetAllForms(ctx context.Context) ([]*model.Form, error) {
 		return nil, err
 	}
 	return all, nil
+}
+
+func (d database) GetAllAcceptedFormsWithUser(ctx context.Context) ([]*model.Form, error) {
+	q := query.Use(d.db)
+	u := q.User
+	f := q.Form
+	f2 := f.As("f2")
+	createdAtMax := field.NewInt64("f2", "created_at_max")
+	subQuery := f.WithContext(ctx).
+		Join(u, u.TelegramID.EqCol(f.UserTelegramId)).
+		Where(f.Status.Eq(model.FormStatusAccepted)).
+		Where(u.Status.Eq(model.UserStatusActive)).
+		Group(f.UserTelegramId).
+		Select(f.UserTelegramId, f.CreatedAt.Max().As("created_at_max")).
+		As("f2").
+		Attrs(createdAtMax)
+	forms, err := f.WithContext(ctx).Preload(f.User).
+		LeftJoin(subQuery, f2.UserTelegramId.EqCol(f.UserTelegramId)).
+		Where(createdAtMax.EqCol(f.CreatedAt)).
+		Find()
+	if err != nil {
+		return nil, err
+	}
+
+	return forms, nil
 }
 
 func NewDatabase(dsn string, logger *zap.Logger) (Database, error) {

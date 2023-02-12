@@ -1,14 +1,12 @@
 {{ template "header" .}}
 {{ template "navbar" .}}
 
-<div class="container my-4">
-    <div class="row row-cols-1 rowcols-sm-2 row-cols-md-3">
-        {{ range .users }}
-            <div class="col">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3">
+        {{ range .forms }}
+            <div class="col my-3">
                 {{ template "userCard" .}}
             </div>
         {{end}}
     </div>
-</div>
 
 {{ template "footer" .}}

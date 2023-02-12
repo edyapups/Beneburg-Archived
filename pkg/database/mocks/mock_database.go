@@ -337,3 +337,18 @@ func (mr *MockDatabaseMockRecorder) GetAllForms(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllForms", reflect.TypeOf((*MockDatabase)(nil).GetAllForms), ctx)
 }
+
+// GetAllAcceptedFormsWithUser mocks base method
+func (m *MockDatabase) GetAllAcceptedFormsWithUser(ctx context.Context) ([]*model.Form, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllAcceptedFormsWithUser", ctx)
+	ret0, _ := ret[0].([]*model.Form)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllAcceptedFormsWithUser indicates an expected call of GetAllAcceptedFormsWithUser
+func (mr *MockDatabaseMockRecorder) GetAllAcceptedFormsWithUser(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllAcceptedFormsWithUser", reflect.TypeOf((*MockDatabase)(nil).GetAllAcceptedFormsWithUser), ctx)
+}

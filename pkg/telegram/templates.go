@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"beneburg/pkg/database/model"
-	"beneburg/pkg/utils"
 	"fmt"
 	"html"
 	"strings"
@@ -31,6 +30,7 @@ type Templator interface {
 var _ Templator = templator{}
 
 type templator struct {
+	domain string
 }
 
 func (t templator) NewChatMember() string {
@@ -113,7 +113,7 @@ func (t templator) StartCommandReply() string {
 func (t templator) LoginCommandReply(token *model.Token) string {
 	stringBuilder := strings.Builder{}
 	stringBuilder.WriteString("Вот твоя ссылка для входа:\n")
-	stringBuilder.WriteString(html.EscapeString(utils.URLFromToken(token.UUID)))
+	stringBuilder.WriteString(html.EscapeString(t.URLFromToken(token.UUID)))
 	return stringBuilder.String()
 }
 
@@ -123,10 +123,7 @@ func (t templator) InfoCommandNoUser() string {
 
 func (t templator) InfoCommandReply(user *model.User, form *model.Form) string {
 	stringBuilder := strings.Builder{}
-	stringBuilder.WriteString("<b>Информация об участнике:</b>")
-
-	AddDelimiter(&stringBuilder)
-	stringBuilder.WriteString(t.FormInfo(form))
+	stringBuilder.WriteString(fmt.Sprintf("<b>Профиль участника:</b>\n%s", html.EscapeString(t.UserPageLink(user))))
 	AddDelimiter(&stringBuilder)
 	stringBuilder.WriteString(t.UserIdWithHref(user))
 
@@ -139,6 +136,10 @@ func (t templator) UserIdWithHref(user *model.User) string {
 		user.TelegramID,
 		user.TelegramID,
 	)
+}
+
+func (t templator) UserPageLink(user *model.User) string {
+	return fmt.Sprintf("%s/user/%d", t.domain, user.TelegramID)
 }
 
 func (t templator) FormInfo(form *model.Form) string {
@@ -185,6 +186,12 @@ func (t templator) InfoCommandNoReply() string {
 	return "Для получения информации об участнике необходимо ответить на его сообщение командой /info"
 }
 
-func NewTemplator() Templator {
-	return &templator{}
+func NewTemplator(domain string) Templator {
+	return &templator{
+		domain: domain,
+	}
+}
+
+func (t templator) URLFromToken(token string) string {
+	return fmt.Sprintf("%s/login/%s", t.domain, token)
 }
