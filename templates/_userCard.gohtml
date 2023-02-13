@@ -14,6 +14,9 @@
                 <span class="badge bg-secondary fs-6 ">
                     {{ .Age }}
                 </span>
+                <p class="fw-light fs-6 text-secondary">
+                    {{ .User.FirstName }} {{ with .User.LastName }}{{.}}{{ end }}
+                </p>
             </h5>
 
             <div class="card-text">
